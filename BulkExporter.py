@@ -2,7 +2,7 @@
 
 import os
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from collections import OrderedDict
 
 import requests
@@ -11,21 +11,15 @@ from sqlalchemy import create_engine, text
 
 from config import (
     VS_CURRENCY,
-    BULK_DAYS_BACK,
+    BULK_DAYS_BACK,         # used for DAILY history (e.g. 365)
     TABLE_PRICE_DAILY,
     TABLE_PRICE_HOURLY,
     BULK_IMPORT_JOB_NAME,
-    ENABLE_HOURLY,  # <- add this in config.py
+    ENABLE_HOURLY,
+    HOURLY_MIN_AGE_HOURS,   # controls "every ~3 hours"
+    DAILY_MIN_AGE_HOURS,    # controls "once per day"
+    HOURLY_MAX_DAYS_BACK
 )
-
-# CoinGecko demo behaviour (simplified summary):
-#  - Very recent range  -> sub-hourly / hourly
-#  - Medium range       -> hourly
-#  - Longer range       -> daily bars
-# We do NOT send `interval`; CoinGecko chooses granularity automatically.
-# For both daily and "hourly" tables we allow requests up to BULK_DAYS_BACK
-# (e.g. 1 year). Older parts of that window may come back as daily data, but
-# you still get a continuous 1-year time series.
 
 BASE_URL = "https://api.coingecko.com/api/v3"
 
@@ -46,6 +40,12 @@ def fetch_market_chart_raw(
     vs_currency: str,
     days: int,
 ) -> dict:
+    """
+    Wrapper around /coins/{id}/market_chart?days=N
+
+    - For DAILY data: works for any N; CoinGecko will downsample >90d to daily.
+    - For HOURLY data: we explicitly cap N <= 90, so we always get hourly bars.
+    """
     api_key = _get_api_key()
 
     url = f"{BASE_URL}/coins/{coin_id}/market_chart"
@@ -70,6 +70,7 @@ def _parse_market_chart_to_rows(payload: dict):
     volumes = payload.get("total_volumes", []) or []
 
     rows = []
+    # Zip can truncate if lists are uneven, but CoinGecko usually syncs them.
     for (ts_p, price), (ts_mc, mc), (ts_v, vol) in zip(prices, market_caps, volumes):
         ts = datetime.fromtimestamp(ts_p / 1000.0, tz=timezone.utc)
         rows.append(
@@ -85,15 +86,20 @@ def _parse_market_chart_to_rows(payload: dict):
     return rows
 
 
+# -------------------------
+# Series fetchers
+# -------------------------
+
 def fetch_daily_series(coin_id: str, days: int):
     days = max(1, min(days, BULK_DAYS_BACK))
     payload = fetch_market_chart_raw(coin_id, VS_CURRENCY, days)
     rows = _parse_market_chart_to_rows(payload)
 
+    # Collapse to one row per calendar date (last point wins)
     by_date: OrderedDict[datetime.date, dict] = OrderedDict()
     for r in rows:
         d = r["observed_at"].date()
-        by_date[d] = r  # last one wins
+        by_date[d] = r
 
     daily_rows = list(by_date.values())
     daily_rows.sort(key=lambda r: r["observed_at"])
@@ -101,7 +107,7 @@ def fetch_daily_series(coin_id: str, days: int):
 
 
 def fetch_hourly_series(coin_id: str, days: int):
-    days = max(1, min(days, BULK_DAYS_BACK))
+    days = max(1, min(days, HOURLY_MAX_DAYS_BACK))  # hard cap at 90d
     payload = fetch_market_chart_raw(coin_id, VS_CURRENCY, days)
     rows = _parse_market_chart_to_rows(payload)
     return rows
@@ -113,7 +119,13 @@ def fetch_hourly_series(coin_id: str, days: int):
 
 def get_active_assets(conn):
     sql = text("""
-        SELECT id, coingecko_id, symbol, name, last_active
+        SELECT
+            id,
+            coingecko_id,
+            symbol,
+            name,
+            last_daily_observed_at,
+            last_hourly_observed_at
         FROM crypto_asset
         WHERE is_active = TRUE;
     """)
@@ -121,73 +133,80 @@ def get_active_assets(conn):
     return [dict(row._mapping) for row in result.fetchall()]
 
 
-def compute_days_to_pull(last_active):
+def compute_days_to_pull_generic(last_ts, max_days: int) -> int:
     """
-    Rules:
-      - last_active is NULL         -> full BULK_DAYS_BACK
-      - last_active older than N    -> full BULK_DAYS_BACK
-      - last_active within N days   -> delta from last_active to now
-                                       approx (now - last_active).days + 2
+    Common logic for daily/hourly:
+      - last_ts is NULL         -> full max_days
+      - last_ts older than max  -> full max_days
+      - last_ts within max      -> delta_days + 2 (buffer), clipped
     """
     now = datetime.now(timezone.utc)
+    if last_ts is None:
+        return max_days
 
-    if last_active is None:
-        return BULK_DAYS_BACK
+    delta_days = (now - last_ts).days
+    if delta_days >= max_days:
+        return max_days
 
-    delta_days = (now - last_active).days
-
-    if delta_days >= BULK_DAYS_BACK:
-        return BULK_DAYS_BACK
-
-    return min(BULK_DAYS_BACK, max(1, delta_days + 2))
+    return min(max_days, max(1, delta_days + 2))
 
 
-def bulk_insert_prices_and_update_last_active(conn, asset_id, coin_id: str, days_to_pull: int):
+def compute_daily_days_to_pull(last_daily_ts):
+    # Daily can look back as far as BULK_DAYS_BACK (e.g. 365 days)
+    return compute_days_to_pull_generic(last_daily_ts, BULK_DAYS_BACK)
 
-    # ---- Fetch daily (always) ----
-    daily_rows = fetch_daily_series(
-        coin_id=coin_id,
-        days=days_to_pull,
-    )
 
-    # ---- Fetch hourly (optional) ----
-    hourly_rows = []
-    hourly_error = None
-    if ENABLE_HOURLY:
-        try:
-            hourly_rows = fetch_hourly_series(
-                coin_id=coin_id,
-                days=days_to_pull,
-            )
-        except Exception as ex:  # don't kill the whole asset on hourly failure
-            hourly_error = str(ex)
-            hourly_rows = []
+def compute_hourly_days_to_pull(last_hourly_ts):
+    return compute_days_to_pull_generic(last_hourly_ts, HOURLY_MAX_DAYS_BACK)
 
-    # Insert daily
-    if daily_rows:
-        insert_daily_sql = text(f"""
-            INSERT INTO {TABLE_PRICE_DAILY} (
-                asset_id,
-                observed_at,
-                currency_code,
-                price,
-                market_cap_usd,
-                volume_24h_usd
-            )
-            VALUES (
-                :asset_id,
-                :observed_at,
-                :currency_code,
-                :price,
-                :market_cap_usd,
-                :volume_24h_usd
-            )
-            ON CONFLICT (asset_id, observed_at, currency_code)
-            DO NOTHING;
-        """)
-        conn.execute(
-            insert_daily_sql,
-            [
+
+def should_run_hourly(last_hourly_ts, now: datetime) -> bool:
+    if last_hourly_ts is None:
+        return True  # never run before -> backfill (up to 90 days)
+    age_hours = (now - last_hourly_ts).total_seconds() / 3600.0
+    return age_hours >= HOURLY_MIN_AGE_HOURS
+
+
+def should_run_daily(last_daily_ts, now: datetime) -> bool:
+    if last_daily_ts is None:
+        return True  # never run before -> backfill (up to BULK_DAYS_BACK)
+    age_hours = (now - last_daily_ts).total_seconds() / 3600.0
+    return age_hours >= DAILY_MIN_AGE_HOURS
+
+
+def bulk_insert_prices_and_update_last_observed(
+    conn,
+    asset_id,
+    coin_id: str,
+    days_for_daily: int | None,
+    days_for_hourly: int | None,
+):
+    # ---- Fetch daily ----
+    daily_rows = []
+    if days_for_daily is not None:
+        daily_rows = fetch_daily_series(coin_id, days_for_daily)
+        if daily_rows:
+            insert_daily_sql = text(f"""
+                INSERT INTO {TABLE_PRICE_DAILY} (
+                    asset_id,
+                    observed_at,
+                    currency_code,
+                    price,
+                    market_cap_usd,
+                    volume_24h_usd
+                )
+                VALUES (
+                    :asset_id,
+                    :observed_at,
+                    :currency_code,
+                    :price,
+                    :market_cap_usd,
+                    :volume_24h_usd
+                )
+                ON CONFLICT (asset_id, observed_at, currency_code)
+                DO NOTHING;
+            """)
+            conn.execute(insert_daily_sql, [
                 {
                     "asset_id": asset_id,
                     "observed_at": r["observed_at"],
@@ -197,62 +216,67 @@ def bulk_insert_prices_and_update_last_active(conn, asset_id, coin_id: str, days
                     "volume_24h_usd": r["volume_24h_usd"],
                 }
                 for r in daily_rows
-            ],
-        )
+            ])
 
-    # Insert hourly
-    if ENABLE_HOURLY and hourly_rows:
-        insert_hourly_sql = text(f"""
-            INSERT INTO {TABLE_PRICE_HOURLY} (
-                asset_id,
-                observed_at,
-                currency_code,
-                price,
-                market_cap_usd,
-                volume_24h_usd
-            )
-            VALUES (
-                :asset_id,
-                :observed_at,
-                :currency_code,
-                :price,
-                :market_cap_usd,
-                :volume_24h_usd
-            )
-            ON CONFLICT (asset_id, observed_at, currency_code)
-            DO NOTHING;
-        """)
-        conn.execute(
-            insert_hourly_sql,
-            [
-                {
-                    "asset_id": asset_id,
-                    "observed_at": r["observed_at"],
-                    "currency_code": VS_CURRENCY.upper(),
-                    "price": r["price"],
-                    "market_cap_usd": r["market_cap_usd"],
-                    "volume_24h_usd": r["volume_24h_usd"],
-                }
-                for r in hourly_rows
-            ],
-        )
+    # ---- Fetch hourly (optional) ----
+    hourly_rows = []
+    hourly_error = None
+    if ENABLE_HOURLY and days_for_hourly is not None:
+        try:
+            hourly_rows = fetch_hourly_series(coin_id, days_for_hourly)
+            if hourly_rows:
+                insert_hourly_sql = text(f"""
+                    INSERT INTO {TABLE_PRICE_HOURLY} (
+                        asset_id,
+                        observed_at,
+                        currency_code,
+                        price,
+                        market_cap_usd,
+                        volume_24h_usd
+                    )
+                    VALUES (
+                        :asset_id,
+                        :observed_at,
+                        :currency_code,
+                        :price,
+                        :market_cap_usd,
+                        :volume_24h_usd
+                    )
+                    ON CONFLICT (asset_id, observed_at, currency_code)
+                    DO NOTHING;
+                """)
+                conn.execute(insert_hourly_sql, [
+                    {
+                        "asset_id": asset_id,
+                        "observed_at": r["observed_at"],
+                        "currency_code": VS_CURRENCY.upper(),
+                        "price": r["price"],
+                        "market_cap_usd": r["market_cap_usd"],
+                        "volume_24h_usd": r["volume_24h_usd"],
+                    }
+                    for r in hourly_rows
+                ])
+        except Exception as ex:
+            hourly_error = str(ex)
+            hourly_rows = []
 
-    # Determine max observed_at across both grains
-    last_ts_candidates = []
     if daily_rows:
-        last_ts_candidates.append(daily_rows[-1]["observed_at"])
-    if hourly_rows:
-        last_ts_candidates.append(hourly_rows[-1]["observed_at"])
-
-    if last_ts_candidates:
-        last_ts = max(last_ts_candidates)
-        update_sql = text("""
+        last_daily_ts = daily_rows[-1]["observed_at"]
+        conn.execute(text("""
             UPDATE crypto_asset
-            SET last_active = :last_ts
+            SET last_daily_observed_at = :last_ts
             WHERE id = :asset_id
-              AND (last_active IS NULL OR last_active < :last_ts);
-        """)
-        conn.execute(update_sql, {"asset_id": asset_id, "last_ts": last_ts})
+              AND (last_daily_observed_at IS NULL OR last_daily_observed_at < :last_ts);
+        """), {"asset_id": asset_id, "last_ts": last_daily_ts})
+
+    if hourly_rows:
+        last_hourly_ts = hourly_rows[-1]["observed_at"]
+        conn.execute(text("""
+            UPDATE crypto_asset
+            SET last_hourly_observed_at = :last_ts
+            WHERE id = :asset_id
+              AND (last_hourly_observed_at IS NULL OR last_hourly_observed_at < :last_ts);
+        """), {"asset_id": asset_id, "last_ts": last_hourly_ts})
 
     return {
         "daily_rows": len(daily_rows),
@@ -262,9 +286,6 @@ def bulk_insert_prices_and_update_last_active(conn, asset_id, coin_id: str, days
 
 
 def update_job_run_log(conn, status: str, details=None):
-    """
-    Log this job run into job_run_log.
-    """
     sql = text("""
         INSERT INTO job_run_log (job_name, last_run_at, last_status, details)
         VALUES (:job_name, NOW(), :status, CAST(:details AS JSONB))
@@ -274,12 +295,11 @@ def update_job_run_log(conn, status: str, details=None):
             last_status = EXCLUDED.last_status,
             details     = EXCLUDED.details;
     """)
-    payload = {
+    conn.execute(sql, {
         "job_name": BULK_IMPORT_JOB_NAME,
         "status": status,
-        "details": None if details is None else json.dumps(details),
-    }
-    conn.execute(sql, payload)
+        "details": json.dumps(details) if details else None,
+    })
 
 
 # -------------------------
@@ -288,7 +308,6 @@ def update_job_run_log(conn, status: str, details=None):
 
 def run_bulk_import():
     load_dotenv()
-
     api_key = os.getenv("COINGECKO_API_KEY")
     db_url = os.getenv("DATABASE_URL")
 
@@ -296,7 +315,6 @@ def run_bulk_import():
         raise RuntimeError("Missing COINGECKO_API_KEY or DATABASE_URL in environment/.env")
 
     os.environ["COINGECKO_API_KEY"] = api_key
-
     engine = create_engine(db_url)
 
     # Step 1: find which assets to consider
@@ -304,9 +322,9 @@ def run_bulk_import():
         assets = get_active_assets(conn)
 
     if not assets:
+        print("No active assets.")
         with engine.begin() as conn:
-            update_job_run_log(conn, status="success", details={"asset_count": 0})
-        print("BulkImport: no active assets found.")
+            update_job_run_log(conn, "success", {"asset_count": 0})
         return
 
     summary = {
@@ -315,59 +333,58 @@ def run_bulk_import():
         "errors": {},
     }
 
-    # Step 2: pull + insert per asset
+    # Step 2: per-asset decisions (daily/hourly) + load
     for asset in assets:
-        asset_id = asset["id"]
-        cg_id = asset["coingecko_id"]
-        symbol = asset["symbol"]
-        name = asset["name"]
-        last_active = asset["last_active"]
+        now = datetime.now(timezone.utc)
 
-        days_to_pull = compute_days_to_pull(last_active)
+        last_daily = asset["last_daily_observed_at"]
+        last_hourly = asset["last_hourly_observed_at"]
 
-        print(f"\n=== Bulk importing {name} ({symbol}) [{cg_id}] for ~{days_to_pull} days ===")
+        run_daily = should_run_daily(last_daily, now)
+        run_hourly = ENABLE_HOURLY and should_run_hourly(last_hourly, now)
+
+        if not run_daily and not run_hourly:
+            print(f"Skipping {asset['symbol']} - fresh.")
+            continue
+
+        days_daily = compute_daily_days_to_pull(last_daily) if run_daily else None
+        days_hourly = compute_hourly_days_to_pull(last_hourly) if run_hourly else None
+
+        print(
+            f"\n=== Bulk importing {asset['name']} ({asset['symbol']}) "
+            f"[{asset['coingecko_id']}] (D:{days_daily}, H:{days_hourly}) ==="
+        )
 
         try:
             with engine.begin() as conn:
-                counts = bulk_insert_prices_and_update_last_active(
+                counts = bulk_insert_prices_and_update_last_observed(
                     conn,
-                    asset_id=asset_id,
-                    coin_id=cg_id,
-                    days_to_pull=days_to_pull,
+                    asset_id=asset["id"],
+                    coin_id=asset["coingecko_id"],
+                    days_for_daily=days_daily,
+                    days_for_hourly=days_hourly,
                 )
 
-            summary["per_asset_rows"][cg_id] = {
-                "daily": counts["daily_rows"],
-                "hourly": counts["hourly_rows"],
-                "days_requested": days_to_pull,
-                "hourly_error": counts.get("hourly_error"),
-            }
-
+            summary["per_asset_rows"][asset["coingecko_id"]] = counts
             print(
-                f"Inserted {counts['daily_rows']} daily and "
-                f"{counts['hourly_rows']} sub-daily points for {cg_id}"
+                f" -> Inserted {counts['daily_rows']} daily, "
+                f"{counts['hourly_rows']} hourly."
             )
             if counts.get("hourly_error"):
-                print(f"  (Hourly error for {cg_id}: {counts['hourly_error']})")
+                print(f"    Hourly error: {counts['hourly_error']}")
 
         except Exception as e:
-            err_msg = str(e)
-            summary["errors"][cg_id] = err_msg
-            print(f"ERROR importing {cg_id}: {err_msg}")
+            summary["errors"][asset["coingecko_id"]] = str(e)
+            print(f" -> ERROR: {e}")
 
+    # Step 3: log run
     status = "success" if not summary["errors"] else "partial_success"
-
-    # Step 3: update job_run_log
     with engine.begin() as conn:
-        update_job_run_log(conn, status=status, details=summary)
+        update_job_run_log(conn, status, summary)
 
-    print("\nBulkImport completed. Summary:")
+    print("\nDone.")
     print(json.dumps(summary, indent=2))
 
 
-def main():
-    run_bulk_import()
-
-
 if __name__ == "__main__":
-    main()
+    run_bulk_import()
