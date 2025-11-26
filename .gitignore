@@ -2,3 +2,5 @@
 .env
 *.env
 PROJECT_OVERVIEW.md
+# Visual Studio cache
+.vs/
