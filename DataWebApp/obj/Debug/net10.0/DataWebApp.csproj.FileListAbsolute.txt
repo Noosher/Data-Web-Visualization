@@ -22,7 +22,6 @@ C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\Da
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\scopedcss\bundle\DataWebApp.styles.css
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\scopedcss\projectbundle\DataWebApp.bundle.scp.css
-C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\compressed\czu08e6kre-{0}-b9sayid5wm-b9sayid5wm.gz
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\compressed\7omkowdjko-{0}-61n19gt1b8-61n19gt1b8.gz
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\compressed\9hapwahxxl-{0}-xtxxf3hu2r-xtxxf3hu2r.gz
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\compressed\78yffae6xb-{0}-bqjiyaj88i-bqjiyaj88i.gz
@@ -244,3 +243,5 @@ C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\Da
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\bin\Debug\net10.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\bin\Debug\net10.0\runtimes\win\lib\net9.0\System.Windows.Extensions.dll
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\DataWebApp.csproj.Up2Date
+C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
+C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\obj\Debug\net10.0\compressed\czu08e6kre-{0}-m76qwtzq18-m76qwtzq18.gz
