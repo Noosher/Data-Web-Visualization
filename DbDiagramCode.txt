@@ -1,0 +1,218 @@
+// Crypto Analytics Database Schema
+// Used by:
+//   - GroupSelector.py  (selects which assets/groups to track)
+//   - bulk_import.py    (BulkExporter – pulls historical & delta prices)
+//   - Downstream BI / dashboards (read-only analytics)
+
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table crypto_asset {
+  id                      uuid        [pk, not null, default: `uuid_generate_v4()`]
+  coingecko_id            text        [not null, unique]
+  symbol                  varchar(20) [not null]
+  name                    varchar(100) [not null]
+  is_active               boolean     [not null, default: true]
+  time_added              timestamptz [not null, default: `now()`]
+  last_daily_observed_at  timestamptz
+  last_hourly_observed_at timestamptz
+  
+  Note: '''
+  Purpose:
+    Master dimension table for all tracked coins/tokens.
+
+  Populated / updated by:
+    - GroupSelector.py
+      * Upserts rows based on CoinGecko markets API
+      * Maintains is_active flag via crypto_asset_group membership
+    - bulk_import.py (BulkExporter)
+      * Uses id + coingecko_id to pull price history from CoinGecko
+      * After inserts, updates last_daily_observed_at and last_hourly_observed_at
+        to mark the freshest data ingested per asset.
+
+  Used by:
+    - crypto_asset_price_daily / crypto_asset_price_hourly as FK target
+    - Any reporting layer (Power BI, web app) as the core "Asset" dimension.
+  '''
+}
+
+Table crypto_asset_price_daily {
+  id             bigserial     [pk, not null]
+  asset_id       uuid          [not null]
+  observed_at    timestamptz   [not null]
+  currency_code  char(3)       [not null, default: 'USD']
+  price          numeric(18,8) [not null]
+  market_cap_usd numeric(20,4)
+  volume_24h_usd numeric(20,4)
+  
+  indexes {
+    (asset_id, observed_at, currency_code) [unique]
+    asset_id
+    observed_at
+  }
+  
+  Note: '''
+  Purpose:
+    Stores daily-granularity price history for each crypto_asset.
+    One row per asset_id + observed_at + currency_code.
+
+  Populated / updated by:
+    - bulk_import.py (BulkExporter)
+      * Calls CoinGecko /coins/{id}/market_chart (no interval param)
+      * Aggregates raw ticks to daily bars and inserts/upserts here.
+      * Uses ON CONFLICT to avoid duplicates on reruns.
+
+  Used by:
+    - Time-series analyses & Power BI dashboards that need clean daily data.
+    - Last_daily_observed_at in crypto_asset reflects the max(observed_at) here.
+  '''
+}
+
+Table crypto_asset_price_hourly {
+  id             bigserial     [pk, not null]
+  asset_id       uuid          [not null]
+  observed_at    timestamptz   [not null]
+  currency_code  char(3)       [not null, default: 'USD']
+  price          numeric(18,8) [not null]
+  market_cap_usd numeric(20,4)
+  volume_24h_usd numeric(20,4)
+  
+  indexes {
+    (asset_id, observed_at, currency_code) [unique]
+    asset_id
+    observed_at
+  }
+  
+  Note: '''
+  Purpose:
+    Stores higher-frequency (hourly / sub-daily) price history.
+    Same structure as the daily table but at a finer grain.
+
+  Populated / updated by:
+    - bulk_import.py (BulkExporter) when ENABLE_HOURLY = True
+      * Pulls recent history from CoinGecko and inserts here.
+      * Handles failures gracefully: if hourly fetch fails, daily still runs.
+
+  Used by:
+    - Intraday charts, volatility analysis, and any near-real-time visuals.
+    - Last_hourly_observed_at in crypto_asset reflects the max(observed_at) here.
+  '''
+}
+
+Table crypto_group {
+  id          uuid [pk, not null, default: `uuid_generate_v4()`]
+  tag         text [not null, unique]
+  type        text [not null]
+  description text
+  
+  Note: '''
+  Purpose:
+    Dimension for logical groupings of assets:
+      - Rank buckets (TOP15 by market cap)
+      - Thematic sets (MEME_TOP5, L1_BLUECHIP, DEFI_BLUECHIP, etc.).
+
+  Populated / updated by:
+    - GroupSelector.py
+      * Upserts groups by tag with type + description
+      * Ensures stable identifiers for analytics and filtering.
+
+  Used by:
+    - crypto_asset_group bridge table
+    - BI reports that filter/aggregate by asset group
+  '''
+}
+
+Table crypto_asset_group {
+  asset_id uuid [not null]
+  group_id uuid [not null]
+  
+  indexes {
+    (asset_id, group_id) [pk]
+    group_id
+  }
+  
+  Note: '''
+  Purpose:
+    Many-to-many bridge table linking crypto_asset to crypto_group.
+    One asset can belong to multiple groups (e.g., bitcoin in both TOP15 and L1_BLUECHIP).
+
+  Populated / updated by:
+    - GroupSelector.py
+      * Rebuilds group membership based on current market data
+      * Manages is_active flag on crypto_asset based on group membership
+
+  Used by:
+    - Queries that need to filter assets by group tag
+    - Reports showing performance by group type
+  '''
+}
+
+Table job_run_log {
+  job_name    text        [pk, not null]
+  last_run_at timestamptz
+  last_status text
+  details     jsonb
+
+  Note: '''
+  Purpose:
+    Operational metadata tracking ETL job execution.
+    Each row represents the last run state of a named job.
+
+  Populated / updated by:
+    - GroupSelector.py (job_name = 'group_selector')
+    - bulk_import.py (job_name = 'bulk_import')
+    * Updates after each run with timestamp, status, and diagnostic details
+
+  Used by:
+    - Monitoring dashboards
+    - Debugging failed runs
+    - Scheduling logic to determine next run window
+  '''
+}
+
+Table crypto_asset_group_history {
+  id              bigserial   [pk, not null]
+  asset_id        uuid        [not null]
+  group_id        uuid        [not null]
+  event_type      varchar(10) [not null, note: 'JOINED or LEFT']
+  event_timestamp timestamptz [not null, default: `now()`]
+  market_cap_usd  numeric(20,4)
+  rank_in_group   integer
+  metadata        jsonb
+
+  indexes {
+    asset_id
+    group_id
+    event_timestamp
+    (asset_id, group_id)
+  }
+
+  Note: '''
+  Purpose:
+    Historical tracking of when assets enter and exit groups.
+    Provides audit trail and enables analysis of group composition changes over time.
+
+  Populated / updated by:
+    - GroupSelector.py
+      * Before rebuilding group membership, captures current state
+      * Compares old vs new membership and records JOINED/LEFT events
+      * Stores market cap and rank at time of event for context
+
+  Used by:
+    - Historical analysis of group membership changes
+    - Identifying when specific assets entered/exited groups
+    - Tracking volatility in group composition (e.g., how often TOP15 changes)
+    - Web app views showing membership timeline per asset or group
+
+  Event Types:
+    - JOINED: Asset became a member of the group
+    - LEFT: Asset was removed from the group
+  '''
+}
+
+// Relationships
+Ref: crypto_asset_price_daily.asset_id > crypto_asset.id [delete: cascade]
+Ref: crypto_asset_price_hourly.asset_id > crypto_asset.id [delete: cascade]
+Ref: crypto_asset_group.asset_id > crypto_asset.id [delete: cascade]
+Ref: crypto_asset_group.group_id > crypto_group.id [delete: cascade]
+Ref: crypto_asset_group_history.asset_id > crypto_asset.id [delete: cascade]
+Ref: crypto_asset_group_history.group_id > crypto_group.id [delete: cascade]

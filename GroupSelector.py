@@ -146,6 +146,94 @@ def update_job_run_log(conn, status: str, details=None):
     conn.execute(sql, payload)
 
 
+def get_current_group_members(conn, group_id):
+    """Fetch current asset_ids for a given group before rebuilding."""
+    sql = text("""
+        SELECT asset_id
+        FROM crypto_asset_group
+        WHERE group_id = :group_id;
+    """)
+    result = conn.execute(sql, {"group_id": group_id})
+    return set(row[0] for row in result.fetchall())
+
+
+def record_membership_change(conn, asset_id, group_id, event_type: str, market_cap_usd=None, rank_in_group=None):
+    """
+    Record a JOINED or LEFT event in crypto_asset_group_history.
+
+    Args:
+        conn: Database connection
+        asset_id: UUID of the asset
+        group_id: UUID of the group
+        event_type: 'JOINED' or 'LEFT'
+        market_cap_usd: Market cap at time of event (optional)
+        rank_in_group: Rank within group at time of event (optional)
+    """
+    sql = text("""
+        INSERT INTO crypto_asset_group_history (
+            asset_id,
+            group_id,
+            event_type,
+            event_timestamp,
+            market_cap_usd,
+            rank_in_group,
+            metadata
+        )
+        VALUES (
+            :asset_id,
+            :group_id,
+            :event_type,
+            NOW(),
+            :market_cap_usd,
+            :rank_in_group,
+            NULL
+        );
+    """)
+    conn.execute(sql, {
+        "asset_id": asset_id,
+        "group_id": group_id,
+        "event_type": event_type,
+        "market_cap_usd": market_cap_usd,
+        "rank_in_group": rank_in_group,
+    })
+
+
+def track_group_changes(conn, group_id, old_members: set, new_member_data: list):
+    """
+    Compare old vs new group membership and record changes.
+
+    Args:
+        conn: Database connection
+        group_id: UUID of the group
+        old_members: Set of asset_ids that were in the group before
+        new_member_data: List of dicts with 'asset_id', 'market_cap', 'rank'
+    """
+    new_members = set(m["asset_id"] for m in new_member_data)
+
+    # Assets that LEFT the group
+    left_members = old_members - new_members
+    for asset_id in left_members:
+        record_membership_change(
+            conn,
+            asset_id,
+            group_id,
+            "LEFT"
+        )
+
+    # Assets that JOINED the group
+    joined_members = new_members - old_members
+    for member_data in new_member_data:
+        if member_data["asset_id"] in joined_members:
+            record_membership_change(
+                conn,
+                member_data["asset_id"],
+                group_id,
+                "JOINED",
+                market_cap_usd=member_data.get("market_cap"),
+                rank_in_group=member_data.get("rank")
+            )
+
+
 # --------- Core logic ---------
 
 
@@ -238,7 +326,13 @@ def run_group_selector():
             description="Sample of major DeFi blue-chip protocols (top by market cap in category)",
         )
 
-        # ---- 6b. Clear existing memberships for these groups (so re-runs are clean) ----
+        # ---- 6b. Capture current memberships BEFORE clearing (for history tracking) ----
+        old_top15_members = get_current_group_members(conn, g_top15)
+        old_meme_members = get_current_group_members(conn, g_meme)
+        old_l1_members = get_current_group_members(conn, g_l1)
+        old_defi_members = get_current_group_members(conn, g_defi)
+
+        # ---- 6c. Clear existing memberships for these groups (so re-runs are clean) ----
         conn.execute(text("""
             DELETE FROM crypto_asset_group
             WHERE group_id IN (:g_top15, :g_meme, :g_l1, :g_defi);
@@ -249,27 +343,57 @@ def run_group_selector():
             "g_defi": g_defi,
         })
 
-        # ---- 7. Upsert assets + bridge rows ----
+        # ---- 7. Upsert assets + bridge rows + build membership data for history ----
 
         # TOP15
-        for row in top15_rows:
+        new_top15_data = []
+        for rank, row in enumerate(top15_rows, start=1):
             asset_id = get_or_create_asset(conn, row["id"], row["symbol"], row["name"])
             add_asset_to_group(conn, asset_id, g_top15)
+            new_top15_data.append({
+                "asset_id": asset_id,
+                "market_cap": safe_mcap(row),
+                "rank": rank
+            })
 
         # MEME_TOP5 (+DOGE if needed)
-        for row in meme_rows:
+        new_meme_data = []
+        for rank, row in enumerate(meme_rows, start=1):
             asset_id = get_or_create_asset(conn, row["id"], row["symbol"], row["name"])
             add_asset_to_group(conn, asset_id, g_meme)
+            new_meme_data.append({
+                "asset_id": asset_id,
+                "market_cap": safe_mcap(row),
+                "rank": rank
+            })
 
         # L1_BLUECHIP
-        for row in l1_rows:
+        new_l1_data = []
+        for rank, row in enumerate(l1_rows, start=1):
             asset_id = get_or_create_asset(conn, row["id"], row["symbol"], row["name"])
             add_asset_to_group(conn, asset_id, g_l1)
+            new_l1_data.append({
+                "asset_id": asset_id,
+                "market_cap": safe_mcap(row),
+                "rank": rank
+            })
 
         # DEFI_BLUECHIP
-        for row in defi_rows:
+        new_defi_data = []
+        for rank, row in enumerate(defi_rows, start=1):
             asset_id = get_or_create_asset(conn, row["id"], row["symbol"], row["name"])
             add_asset_to_group(conn, asset_id, g_defi)
+            new_defi_data.append({
+                "asset_id": asset_id,
+                "market_cap": safe_mcap(row),
+                "rank": rank
+            })
+
+        # ---- 7b. Track group membership changes (JOINED/LEFT events) ----
+        track_group_changes(conn, g_top15, old_top15_members, new_top15_data)
+        track_group_changes(conn, g_meme, old_meme_members, new_meme_data)
+        track_group_changes(conn, g_l1, old_l1_members, new_l1_data)
+        track_group_changes(conn, g_defi, old_defi_members, new_defi_data)
 
         # ---- 8. Maintain is_active ----
         set_is_active_flags(conn)
