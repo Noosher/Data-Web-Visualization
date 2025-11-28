@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DataWebApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1f2d2d731710e1f5b127e3ec791d8214df5245f6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+be4cc301791b45521b617f3b3c4c4dbf8df431bf")]
 [assembly: System.Reflection.AssemblyProductAttribute("DataWebApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DataWebApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

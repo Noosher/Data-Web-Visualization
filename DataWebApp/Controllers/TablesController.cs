@@ -54,8 +54,14 @@ namespace DataWebApp.Controllers
             public int DistinctAssets { get; set; }
             public int DistinctGroups { get; set; }
             public double AvgGroupsPerAsset { get; set; }
+
+            // NEW:
+            public int AssetsWith2Groups { get; set; }
+            public int AssetsWith3PlusGroups { get; set; }
+
             public List<CryptoAssetGroupMembershipRowViewModel> Memberships { get; set; } = new();
         }
+
 
         // ============================
         // Actions
@@ -97,9 +103,10 @@ namespace DataWebApp.Controllers
 
             return View(vm);
         }
-
+        // /Tables/CryptoAssetGroups
         public async Task<IActionResult> CryptoAssetGroups()
         {
+            // Use many-to-many via CryptoAsset.Groups navigation
             var membershipRows = await _db.CryptoAssets
                 .SelectMany(
                     asset => asset.Groups,
@@ -115,16 +122,18 @@ namespace DataWebApp.Controllers
                 .ToListAsync();
 
             // ============================
-            // Sigma Overlap: compute other groups per asset
+            // Build per-asset group lists
             // ============================
-
             var tagsBySymbol = membershipRows
                 .GroupBy(m => m.Symbol, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(x => x.Tag).ToList(),
+                    g => g.Select(x => x.Tag)
+                          .Distinct(StringComparer.OrdinalIgnoreCase)
+                          .ToList(),
                     StringComparer.OrdinalIgnoreCase);
 
+            // Use those tag lists to populate OtherGroupTags per row (Σ Overlap)
             foreach (var row in membershipRows)
             {
                 if (tagsBySymbol.TryGetValue(row.Symbol, out var allTags))
@@ -134,29 +143,49 @@ namespace DataWebApp.Controllers
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .ToList();
                 }
+                else
+                {
+                    row.OtherGroupTags = new List<string>();
+                }
             }
 
+            // ============================
+            // Per-asset group counts
+            // ============================
+            var perAssetGroupCounts = tagsBySymbol
+                .Select(kvp => new
+                {
+                    Symbol = kvp.Key,
+                    GroupCount = kvp.Value.Count   // already distinct above
+                })
+                .ToList();
+
             var totalMemberships = membershipRows.Count;
-            var distinctAssets = membershipRows
-                .Select(m => m.Symbol)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Count();
+            var distinctAssets = perAssetGroupCounts.Count;
             var distinctGroups = membershipRows
                 .Select(m => m.Tag)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Count();
+
+            var avgGroupsPerAsset = distinctAssets == 0
+                ? 0
+                : Math.Round(perAssetGroupCounts.Average(x => x.GroupCount), 2);
+
+            var assetsWith2Groups = perAssetGroupCounts.Count(x => x.GroupCount == 2);
+            var assetsWith3PlusGroups = perAssetGroupCounts.Count(x => x.GroupCount >= 3);
 
             var vm = new CryptoAssetGroupsPageViewModel
             {
                 TotalMemberships = totalMemberships,
                 DistinctAssets = distinctAssets,
                 DistinctGroups = distinctGroups,
-                AvgGroupsPerAsset = distinctAssets == 0
-                    ? 0
-                    : Math.Round((double)totalMemberships / distinctAssets, 2),
+                AvgGroupsPerAsset = avgGroupsPerAsset,
+                AssetsWith2Groups = assetsWith2Groups,
+                AssetsWith3PlusGroups = assetsWith3PlusGroups,
                 Memberships = membershipRows
             };
 
+            // View: Views/Tables/CryptoAssetGroups.cshtml
             return View(vm);
         }
 
@@ -181,6 +210,7 @@ namespace DataWebApp.Controllers
 
             return View(rows);
         }
+        
 
         public async Task<IActionResult> CryptoAssetGroupHistory()
         {

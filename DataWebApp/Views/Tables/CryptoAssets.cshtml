@@ -1,14 +1,174 @@
 ﻿@model List<DataWebApp.data.CryptoAsset>
-<h1>Crypto Assets</h1>
-<table class="table app-table">
-    <thead>...</thead>
-    <tbody>
-        @foreach (var a in Model)
-        {
-            <tr>
-                <td>@a.Symbol</td>
-                <td>@a.Name</td>
-            </tr>
-        }
-    </tbody>
-</table>
+
+@{
+    ViewData["Title"] = "Crypto Assets";
+
+    var totalAssets = Model?.Count ?? 0;
+    var activeAssets = Model?.Count(a => a.IsActive) ?? 0;
+    var inactiveAssets = totalAssets - activeAssets;
+
+    var recentThreshold = DateTime.UtcNow.AddDays(-30);
+    var recentAssets = Model?.Count(a => a.TimeAdded >= recentThreshold) ?? 0;
+}
+
+<div class="app-card">
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">Crypto Assets (crypto_asset)</h1>
+            <p class="text-muted small mb-0">
+                Canonical list of all tracked coins with their symbols, names, and CoinGecko IDs.
+            </p>
+        </div>
+        <span class="badge rounded-pill app-badge-muted">
+            Dimension &middot; Asset Catalog
+        </span>
+    </div>
+
+    <div class="app-card-body">
+
+        <!-- KPI Row -->
+        <div class="app-kpi-row mb-3">
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Total Assets</div>
+                <div class="app-kpi-value">@totalAssets</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Active Assets</div>
+                <div class="app-kpi-value">@activeAssets</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Inactive Assets</div>
+                <div class="app-kpi-value">@inactiveAssets</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Added Last 30 Days</div>
+                <div class="app-kpi-value">@recentAssets</div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Left: Asset table -->
+            <div class="col-12 col-lg-7">
+                <div class="app-card-inner">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="h6 text-uppercase text-muted mb-0">Tracked Asset Catalog</h2>
+                        <span class="small text-muted">
+                            Showing @totalAssets assets
+                        </span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 420px; overflow:auto;">
+                        <table class="table table-sm align-middle mb-0 app-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Symbol</th>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">CoinGecko ID</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Time Added (UTC)</th>
+                                    <th scope="col"
+                                        title="Uses last hourly or daily observation; if none recorded, treated as currently active.">
+                                        Last Active (UTC)
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model == null || !Model.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted small">
+                                            No assets found. After running your ETL (e.g. <code>BulkExporter.py</code>),
+                                            this table will populate with the current asset universe.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var a in Model.OrderBy(x => x.Symbol))
+                                    {
+                                        var isActiveClass = a.IsActive
+                                        ? "badge bg-success-subtle text-success"
+                                        : "badge bg-secondary-subtle text-muted";
+
+                                        // Pick the best "last active" instant: prefer hourly, then daily
+                                        DateTime? lastActiveInstant = a.LastHourlyObservedAt ?? a.LastDailyObservedAt;
+                                        bool hasLastActive = lastActiveInstant.HasValue;
+
+                                        var lastActiveText = hasLastActive
+                                        ? lastActiveInstant.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm")
+                                        : "Currently active";
+
+                                        // Green when no date (currently active), yellow when a timestamp exists
+                                        var lastActiveBadgeClass = hasLastActive
+                                        ? "badge last-active-badge-historical"
+                                        : "badge last-active-badge-current";
+
+                                        <tr>
+                                            <td class="fw-semibold text-monospace">@a.Symbol</td>
+                                            <td class="small">@a.Name</td>
+                                            <td class="small text-monospace">
+                                                @a.CoingeckoId
+                                            </td>
+                                            <td>
+                                                <span class="@isActiveClass">
+                                                    @(a.IsActive ? "Active" : "Inactive")
+                                                </span>
+                                            </td>
+                                            <td class="small text-nowrap">
+                                                @a.TimeAdded.ToUniversalTime().ToString("yyyy-MM-dd HH:mm")
+                                            </td>
+                                            <td class="small text-nowrap">
+                                                <span class="@lastActiveBadgeClass">
+                                                    @lastActiveText
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Explanation / usage -->
+            <div class="col-12 col-lg-5">
+                <div class="app-card-inner">
+                    <h2 class="h6 text-uppercase text-muted mb-2">How This Table Is Used</h2>
+                    <p class="small mb-2">
+                        <code>crypto_asset</code> is the master dimension for all downstream analytics.
+                        Each row represents a single coin with a stable primary key (<code>id</code>) and
+                        a globally unique <code>coingecko_id</code> used by the ETL layer.
+                    </p>
+                    <p class="small mb-2">
+                        The <code>last_daily_observed_at</code> and <code>last_hourly_observed_at</code> fields
+                        indicate how fresh your price history is at different granularities.
+                    </p>
+                    <ul class="small mb-2">
+                        <li>Join to price fact tables by <code>asset_id</code> for historical analysis.</li>
+                        <li>Join to group membership (<code>crypto_asset_group</code>) for segment-level KPIs.</li>
+                        <li>Use the derived “Last Active” signal to spot stale or missing price feeds.</li>
+                    </ul>
+
+                    <h3 class="fw-semibold fs-6 mt-3 mb-1">Example Query</h3>
+<pre class="small text-monospace mb-2" style="white-space: pre; overflow:auto;">
+SELECT a.symbol,
+       a.name,
+       a.coingecko_id,
+       a.is_active,
+       a.time_added,
+       a.last_hourly_observed_at,
+       a.last_daily_observed_at
+FROM crypto_asset a
+ORDER BY a.symbol;
+</pre>
+
+                    <p class="small mb-0">
+                        In the UI, “Last Active” is computed as the latest of the hourly or daily timestamps,
+                        with nulls treated as <em>currently active</em> to keep the catalog readable at a glance.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

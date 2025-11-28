@@ -644,15 +644,60 @@ html[data-theme="dark"] pre {
     border: 1px solid #1f2937;
 }
 
-/* Sigma Overlap badge */
+/* Yellow: asset has other group memberships */
 .sigma-overlap-badge {
     background-color: #facc15; /* yellow */
-    color: #1f2937; /* dark text */
+    color: #1f2937;
     border: 1px solid rgba(234, 179, 8, 0.9);
     font-size: 0.75rem;
 }
 
 html[data-theme="dark"] .sigma-overlap-badge {
+    background-color: #facc15;
+    color: #111827;
+}
+
+/* Green: asset is ONLY in this group (no other groups) */
+.sigma-overlap-badge-none {
+    background-color: #22c55e; /* green */
+    color: #022c22;
+    border: 1px solid rgba(22, 163, 74, 0.9);
+    font-size: 0.75rem;
+}
+
+html[data-theme="dark"] .sigma-overlap-badge-none {
+    background-color: #22c55e;
+    color: #052e16;
+}
+
+
+/* Last Active badges */
+.last-active-badge-current {
+    /* Green: no date stored => treated as currently active */
+    background-color: #22c55e;
+    color: #022c22;
+    border: 1px solid rgba(22, 163, 74, 0.9);
+    font-size: 0.75rem;
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+}
+
+html[data-theme="dark"] .last-active-badge-current {
+    background-color: #22c55e;
+    color: #052e16;
+}
+
+/* Yellow: historical last_active date is present */
+.last-active-badge-historical {
+    background-color: #facc15;
+    color: #1f2937;
+    border: 1px solid rgba(234, 179, 8, 0.9);
+    font-size: 0.75rem;
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+}
+
+html[data-theme="dark"] .last-active-badge-historical {
     background-color: #facc15;
     color: #111827;
 }

@@ -37,6 +37,16 @@
                 <div class="app-kpi-label">Avg Groups / Asset</div>
                 <div class="app-kpi-value">@Model.AvgGroupsPerAsset</div>
             </div>
+
+            <!-- NEW KPI chips -->
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Assets in 2 Groups</div>
+                <div class="app-kpi-value">@Model.AssetsWith2Groups</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Assets in ≥ 3 Groups</div>
+                <div class="app-kpi-value">@Model.AssetsWith3PlusGroups</div>
+            </div>
         </div>
 
         <div class="row g-3">
@@ -59,8 +69,8 @@
                                     <th scope="col">Group Tag</th>
                                     <th scope="col">Group Type</th>
                                     <th scope="col"
-                                        title="Calculated column: Shows which other groups this asset also belongs to.">
-                                        Σ of Overlap
+                                        title="Calculated column: shows which other groups this asset also belongs to.">
+                                        Σ Overlap
                                     </th>
                                 </tr>
                             </thead>
@@ -83,6 +93,10 @@
                                         ? string.Join(", ", row.OtherGroupTags)
                                         : "No other group";
 
+                                        var badgeClass = hasOther
+                                        ? "sigma-overlap-badge"          // yellow when there ARE other groups
+                                        : "sigma-overlap-badge-none";    // green when NO other groups
+
                                         <tr>
                                             <td class="fw-semibold text-monospace">@row.Symbol</td>
                                             <td class="small">@row.Name</td>
@@ -93,7 +107,7 @@
                                                 @row.Type
                                             </td>
                                             <td>
-                                                <span class="badge rounded-pill sigma-overlap-badge">
+                                                <span class="badge rounded-pill @badgeClass">
                                                     @overlapText
                                                 </span>
                                             </td>
