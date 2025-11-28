@@ -1,0 +1,159 @@
+﻿@model DataWebApp.Controllers.TablesController.CryptoAssetGroupsPageViewModel
+
+@{
+    ViewData["Title"] = "Asset ↔ Group Membership";
+}
+
+<div class="app-card">
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">Asset ↔ Group Membership (crypto_asset_group)</h1>
+            <p class="text-muted small mb-0">
+                Current snapshot of which assets belong to which groups (TOP15, MEME_TOP5, L1_BLUECHIP, etc.).
+            </p>
+        </div>
+        <span class="badge rounded-pill app-badge-muted">
+            Bridge Table &middot; Many-to-Many
+        </span>
+    </div>
+
+    <div class="app-card-body">
+
+        <!-- KPI Row -->
+        <div class="app-kpi-row mb-3">
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Total Memberships</div>
+                <div class="app-kpi-value">@Model.TotalMemberships</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Distinct Assets</div>
+                <div class="app-kpi-value">@Model.DistinctAssets</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Distinct Groups</div>
+                <div class="app-kpi-value">@Model.DistinctGroups</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Avg Groups / Asset</div>
+                <div class="app-kpi-value">@Model.AvgGroupsPerAsset</div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Left: Membership table -->
+            <div class="col-12 col-lg-7">
+                <div class="app-card-inner">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="h6 text-uppercase text-muted mb-0">Current Membership Snapshot</h2>
+                        <span class="small text-muted">
+                            Showing @Model.Memberships.Count rows
+                        </span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 420px; overflow:auto;">
+                        <table class="table table-sm align-middle mb-0 app-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Symbol</th>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Group Tag</th>
+                                    <th scope="col">Group Type</th>
+                                    <th scope="col"
+                                        title="Calculated column: Shows which other groups this asset also belongs to.">
+                                        Σ of Overlap
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Memberships.Any())
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted small">
+                                            No memberships found. After running <code>GroupSelector.py</code>,
+                                            this table will reflect the latest group assignments.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var row in Model.Memberships)
+                                    {
+                                        var hasOther = row.OtherGroupTags != null && row.OtherGroupTags.Any();
+                                        var overlapText = hasOther
+                                        ? string.Join(", ", row.OtherGroupTags)
+                                        : "No other group";
+
+                                        <tr>
+                                            <td class="fw-semibold text-monospace">@row.Symbol</td>
+                                            <td class="small">@row.Name</td>
+                                            <td>
+                                                <span class="badge rounded-pill app-badge-muted">@row.Tag</span>
+                                            </td>
+                                            <td class="small text-uppercase">
+                                                @row.Type
+                                            </td>
+                                            <td>
+                                                <span class="badge rounded-pill sigma-overlap-badge">
+                                                    @overlapText
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Explanation / design notes -->
+            <div class="col-12 col-lg-5">
+                <div class="app-card-inner">
+                    <h2 class="h6 text-uppercase text-muted mb-2">Design &amp; Purpose</h2>
+                    <p class="small mb-2">
+                        <code>crypto_asset_group</code> is a classic many-to-many bridge linking
+                        <code>crypto_asset</code> to <code>crypto_group</code>. Each row represents
+                        a single membership: <em>“Asset X is currently in Group Y”</em>.
+                    </p>
+                    <p class="small mb-2">
+                        This table is intentionally kept narrow (just foreign keys) so that:
+                    </p>
+                    <ul class="small mb-2">
+                        <li>Membership rebuilds are cheap during each <code>GroupSelector.py</code> run.</li>
+                        <li>Joins to assets and groups stay simple and highly normalized.</li>
+                        <li>
+                            Historical changes are pushed into <code>crypto_asset_group_history</code> instead of
+                            bloating the current-state table.
+                        </li>
+                    </ul>
+
+                    <h3 class="fw-semibold fs-6 mt-3 mb-1">Analysis Patterns</h3>
+                    <p class="small mb-2">
+                        The most common pattern is joining this bridge with assets and groups to filter or slice KPIs:
+                    </p>
+<pre class="small text-monospace mb-2" style="white-space: pre; overflow:auto;">
+SELECT a.symbol,
+       g.tag        AS group_tag,
+       g.type       AS group_type
+FROM crypto_asset_group ag
+JOIN crypto_asset a ON a.id = ag.asset_id
+JOIN crypto_group g ON g.id = ag.group_id
+WHERE g.tag = 'TOP15'
+ORDER BY a.symbol;
+</pre>
+                    <p class="small mb-2">
+                        Another common use is to understand how many segments each asset participates in:
+                    </p>
+<pre class="small text-monospace mb-0" style="white-space: pre; overflow:auto;">
+SELECT a.symbol,
+       COUNT(ag.group_id) AS group_count
+FROM crypto_asset a
+LEFT JOIN crypto_asset_group ag ON ag.asset_id = a.id
+GROUP BY a.symbol
+ORDER BY group_count DESC;
+</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

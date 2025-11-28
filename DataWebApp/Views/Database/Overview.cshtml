@@ -1,0 +1,470 @@
+﻿@{
+    ViewData["Title"] = "Database Overview";
+}
+
+<div class="app-card">
+    <!-- Header -->
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">Database Overview</h1>
+            <p class="text-muted small mb-0">
+                Neon Postgres schema powering the Cloud Crypto Market Intelligence Platform.
+            </p>
+        </div>
+        <span class="badge rounded-pill app-badge-muted">
+            Analytics Schema · Read-Optimized
+        </span>
+    </div>
+
+    <div class="app-card-body">
+        <div class="row g-4">
+            <!-- Left: Diagram -->
+            <div class="col-12 col-lg-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h6 text-uppercase text-muted mb-0">Schema Diagram</h2>
+
+                    <!-- Fullscreen button -->
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#schemaDiagramModal">
+                        Full screen
+                    </button>
+                </div>
+
+                <div class="app-card-inner bg-transparent border-0 p-0">
+                    <div class="border rounded-3 p-2 mb-2" style="background-color: rgba(15,23,42,0.4);">
+                        @* Relative path under wwwroot: /Media/DB Diagram_page_002.jpg *@
+                        <img src="~/Media/DB Diagram_page_002.jpg"
+                             alt="Entity-relationship diagram of the crypto analytics database schema"
+                             class="img-fluid rounded-3" />
+                    </div>
+
+                    <p class="small text-muted mb-1">
+                        Schema visualized using
+                        <a href="https://dbdiagram.io" target="_blank" rel="noopener noreferrer">
+                            dbdiagram.io
+                        </a>.
+                    </p>
+                    <p class="small text-muted mb-0">
+                        This schema is designed for read-heavy analytics workloads, feeding the ASP.NET MVC site,
+                        Python notebooks, and downstream BI tools like Power BI.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: High-level table documentation -->
+            <div class="col-12 col-lg-6">
+                <h2 class="h6 text-uppercase text-muted mb-2">Schema Components</h2>
+
+                <div class="app-card-inner mb-3">
+                    <h3 class="fw-semibold fs-6 mb-1">Core Dimensions</h3>
+                    <ul class="small mb-3">
+                        <li class="mb-1">
+                            <strong>crypto_asset</strong> &mdash;
+                            Master dimension for all tracked coins/tokens. Stores <em>symbol</em>, <em>name</em>,
+                            <em>CoinGecko id</em>, active flag, and the latest daily/hourly timestamps.
+                            This is the primary FK target for most price tables.
+                        </li>
+                        <li class="mb-1">
+                            <strong>crypto_group</strong> &mdash;
+                            Logical groupings such as <code>TOP15</code>, <code>MEME_TOP5</code>,
+                            <code>L1_BLUECHIP</code>, <code>DEFI_BLUECHIP</code>. Groups are stable identifiers
+                            for rank buckets and thematic sets used in dashboards and filters.
+                        </li>
+                        <li class="mb-1">
+                            <strong>crypto_asset_group</strong> &mdash;
+                            Many-to-many bridge between <code>crypto_asset</code> and <code>crypto_group</code>.
+                            One asset can belong to multiple groups (e.g. BTC in both TOP15 and L1 blue chips).
+                            This is the “current membership” snapshot used for slicing performance by group.
+                        </li>
+                    </ul>
+
+                    <h3 class="fw-semibold fs-6 mb-1">Price History</h3>
+                    <ul class="small mb-3">
+                        <li class="mb-1">
+                            <strong>crypto_asset_price_daily</strong> &mdash;
+                            Daily-granularity price history. Each row represents an asset, a date/time
+                            (<code>observed_at</code>), a currency (default <code>USD</code>), and associated
+                            metrics like <em>price</em>, <em>market cap</em>, and <em>24h volume</em>.
+                            Optimized for medium-grain trend analysis and Power BI visuals.
+                        </li>
+                        <li class="mb-1">
+                            <strong>crypto_asset_price_hourly</strong> &mdash;
+                            Higher-frequency (hourly / sub-daily) series, with the same shape as the daily table.
+                            Used for intraday charts, volatility analysis, and “near real-time” views. Can be
+                            disabled or throttled if storage or API quotas are tight.
+                        </li>
+                    </ul>
+
+                    <h3 class="fw-semibold fs-6 mb-1">Operational Metadata</h3>
+                    <ul class="small mb-0">
+                        <li class="mb-1">
+                            <strong>crypto_asset_group_history</strong> &mdash;
+                            Event-sourced history of when assets <em>JOIN</em> or <em>LEAVE</em> groups. Each record
+                            captures the event type, timestamp, rank, and market cap at the time of change. Enables
+                            “when did this coin enter TOP15?” style questions and churn analysis on groups.
+                        </li>
+                        <li class="mb-1">
+                            <strong>job_run_log</strong> &mdash;
+                            One row per ETL job, storing the last run timestamp, status, and a JSON payload with
+                            diagnostics (e.g. counts, durations, error messages). Used for monitoring,
+                            troubleshooting, and scheduling logic.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Design Philosophy -->
+        <div class="app-card-inner mt-3">
+            <h2 class="h6 text-uppercase text-muted mb-2">Design Philosophy</h2>
+            <p class="small mb-2">
+                This schema was intentionally designed to sit very close to <strong>third normal form (3NF)</strong>,
+                while still behaving like a <strong>pseudo snowflake model</strong> for analytics. Dimensions and
+                bridges are kept narrow and strongly typed so joins stay predictable and easy to reason about.
+            </p>
+            <p class="small mb-0">
+                At the same time, a few pragmatic compromises were made to optimize for the
+                <strong>limited utilization of the Neon Postgres environment</strong>:
+                data types and table shapes are tuned to minimize row and storage growth, avoid excessive indexes,
+                and keep the schema friendly to free-tier resources without sacrificing clarity for engineers
+                or recruiters reviewing the design.
+            </p>
+        </div>
+
+        <!-- Detailed ETL / table purpose matrix -->
+        <div class="app-card-inner mt-3">
+            <h2 class="h6 text-uppercase text-muted mb-3">How the Schema Works End-to-End</h2>
+
+            <div class="row g-3 small">
+                <div class="col-12 col-md-6">
+                    <h3 class="fw-semibold fs-6 mb-1">Ingest &amp; Orchestration</h3>
+                    <ul class="mb-3">
+                        <li class="mb-1">
+                            <strong>GroupSelector.py</strong>:
+                            discovers and curates which assets to track by calling the CoinGecko markets API.
+                            It:
+                            <ul class="mb-1">
+                                <li>Upserts rows into <code>crypto_asset</code> (symbol, name, coingecko_id).</li>
+                                <li>Creates/updates <code>crypto_group</code> definitions (TOP15, MEME_TOP5, etc.).</li>
+                                <li>Rebuilds <code>crypto_asset_group</code> bridge rows to reflect current membership.</li>
+                                <li>Writes JOINED/LEFT events into <code>crypto_asset_group_history</code>.</li>
+                                <li>Logs status in <code>job_run_log</code> as <code>group_selector</code>.</li>
+                            </ul>
+                        </li>
+                        <li class="mb-1">
+                            <strong>bulk_import.py (BulkExporter)</strong>:
+                            pulls historical and incremental price data from CoinGecko, then:
+                            <ul class="mb-1">
+                                <li>Aggregates ticks into daily candles for <code>crypto_asset_price_daily</code>.</li>
+                                <li>Stores higher-frequency bars in <code>crypto_asset_price_hourly</code> (if enabled).</li>
+                                <li>
+                                    Updates <code>crypto_asset.last_daily_observed_at</code> and
+                                    <code>last_hourly_observed_at</code> per asset.
+                                </li>
+                                <li>Logs status in <code>job_run_log</code> as <code>bulk_import</code>.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <h3 class="fw-semibold fs-6 mb-1">Consumption &amp; Analytics</h3>
+                    <ul class="mb-0">
+                        <li class="mb-1">
+                            The <strong>ASP.NET MVC app</strong> reads from all tables via Entity Framework Core,
+                            powering:
+                            <ul class="mb-1">
+                                <li>Database overview &amp; table web views (this website).</li>
+                                <li>Future dashboards that combine groups, assets, and price history.</li>
+                            </ul>
+                        </li>
+                        <li class="mb-1">
+                            <strong>Power BI / Python notebooks</strong> connect directly to Neon Postgres to build:
+                            <ul class="mb-1">
+                                <li>Performance by group (TOP15 vs MEME_TOP5 vs DEFI_BLUECHIP).</li>
+                                <li>Daily and hourly pricing charts for each asset.</li>
+                                <li>Historical analysis of group churn (who enters/leaves TOP15 over time).</li>
+                                <li>Operational views showing ETL health from <code>job_run_log</code>.</li>
+                            </ul>
+                        </li>
+                        <li class="mb-1">
+                            The schema is intentionally <strong>narrow and normalized</strong>, making it cheap on
+                            storage, easy to reason about in SQL, and straightforward for recruiters and engineers
+                            to inspect.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- DBML Source Snippet -->
+        <div class="app-card-inner mt-3">
+            <h2 class="h6 text-uppercase text-muted mb-2">DBML Source (dbdiagram.io)</h2>
+            <p class="small text-muted mb-2">
+                The following DBML snippet is the source of truth for the schema. It can be imported directly into
+                <a href="https://dbdiagram.io" target="_blank" rel="noopener noreferrer">dbdiagram.io</a> for editing
+                and regeneration of the ERD.
+            </p>
+
+            <div class="border rounded-3 p-2 app-code-block" style="max-height: 420px; overflow:auto;">
+                <pre class="mb-0 small text-monospace" style="white-space: pre;">
+<code>// Crypto Analytics Database Schema
+// Used by:
+//   - GroupSelector.py  (selects which assets/groups to track)
+//   - bulk_import.py    (BulkExporter – pulls historical &amp; delta prices)
+//   - Downstream BI / dashboards (read-only analytics)
+
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table crypto_asset {
+  id                      uuid        [pk, not null, default: `uuid_generate_v4()`]
+  coingecko_id            text        [not null, unique]
+  symbol                  varchar(20) [not null]
+  name                    varchar(100) [not null]
+  is_active               boolean     [not null, default: true]
+  time_added              timestamptz [not null, default: `now()`]
+  last_daily_observed_at  timestamptz
+  last_hourly_observed_at timestamptz
+  
+  Note: '''
+  Purpose:
+    Master dimension table for all tracked coins/tokens.
+
+  Populated / updated by:
+    - GroupSelector.py
+      * Upserts rows based on CoinGecko markets API
+      * Maintains is_active flag via crypto_asset_group membership
+    - bulk_import.py (BulkExporter)
+      * Uses id + coingecko_id to pull price history from CoinGecko
+      * After inserts, updates last_daily_observed_at and last_hourly_observed_at
+        to mark the freshest data ingested per asset.
+
+  Used by:
+    - crypto_asset_price_daily / crypto_asset_price_hourly as FK target
+    - Any reporting layer (Power BI, web app) as the core "Asset" dimension.
+  '''
+}
+
+Table crypto_asset_price_daily {
+  id             bigserial     [pk, not null]
+  asset_id       uuid          [not null]
+  observed_at    timestamptz   [not null]
+  currency_code  char(3)       [not null, default: 'USD']
+  price          numeric(18,8) [not null]
+  market_cap_usd numeric(20,4)
+  volume_24h_usd numeric(20,4)
+  
+  indexes {
+    (asset_id, observed_at, currency_code) [unique]
+    asset_id
+    observed_at
+  }
+  
+  Note: '''
+  Purpose:
+    Stores daily-granularity price history for each crypto_asset.
+    One row per asset_id + observed_at + currency_code.
+
+  Populated / updated by:
+    - bulk_import.py (BulkExporter)
+      * Calls CoinGecko /coins/{id}/market_chart (no interval param)
+      * Aggregates raw ticks to daily bars and inserts/upserts here.
+      * Uses ON CONFLICT to avoid duplicates on reruns.
+
+  Used by:
+    - Time-series analyses & Power BI dashboards that need clean daily data.
+    - Last_daily_observed_at in crypto_asset reflects the max(observed_at) here.
+  '''
+}
+
+Table crypto_asset_price_hourly {
+  id             bigserial     [pk, not null]
+  asset_id       uuid          [not null]
+  observed_at    timestamptz   [not null]
+  currency_code  char(3)       [not null, default: 'USD']
+  price          numeric(18,8) [not null]
+  market_cap_usd numeric(20,4)
+  volume_24h_usd numeric(20,4)
+  
+  indexes {
+    (asset_id, observed_at, currency_code) [unique]
+    asset_id
+    observed_at
+  }
+  
+  Note: '''
+  Purpose:
+    Stores higher-frequency (hourly / sub-daily) price history.
+    Same structure as the daily table but at a finer grain.
+
+  Populated / updated by:
+    - bulk_import.py (BulkExporter) when ENABLE_HOURLY = True
+      * Pulls recent history from CoinGecko and inserts here.
+      * Handles failures gracefully: if hourly fetch fails, daily still runs.
+
+  Used by:
+    - Intraday charts, volatility analysis, and any near-real-time visuals.
+    - Last_hourly_observed_at in crypto_asset reflects the max(observed_at) here.
+  '''
+}
+
+Table crypto_group {
+  id          uuid [pk, not null, default: `uuid_generate_v4()`]
+  tag         text [not null, unique]
+  type        text [not null]
+  description text
+  
+  Note: '''
+  Purpose:
+    Dimension for logical groupings of assets:
+      - Rank buckets (TOP15 by market cap)
+      - Thematic sets (MEME_TOP5, L1_BLUECHIP, DEFI_BLUECHIP, etc.).
+
+  Populated / updated by:
+    - GroupSelector.py
+      * Upserts groups by tag with type + description
+      * Ensures stable identifiers for analytics and filtering.
+
+  Used by:
+    - crypto_asset_group bridge table
+    - BI reports that filter/aggregate by asset group
+  '''
+}
+
+Table crypto_asset_group {
+  asset_id uuid [not null]
+  group_id uuid [not null]
+  
+  indexes {
+    (asset_id, group_id) [pk]
+    group_id
+  }
+  
+  Note: '''
+  Purpose:
+    Many-to-many bridge table linking crypto_asset to crypto_group.
+    One asset can belong to multiple groups (e.g., bitcoin in both TOP15 and L1_BLUECHIP).
+
+  Populated / updated by:
+    - GroupSelector.py
+      * Rebuilds group membership based on current market data
+      * Manages is_active flag on crypto_asset based on group membership
+
+  Used by:
+    - Queries that need to filter assets by group tag
+    - Reports showing performance by group type
+  '''
+}
+
+Table job_run_log {
+  job_name    text        [pk, not null]
+  last_run_at timestamptz
+  last_status text
+  details     jsonb
+
+  Note: '''
+  Purpose:
+    Operational metadata tracking ETL job execution.
+    Each row represents the last run state of a named job.
+
+  Populated / updated by:
+    - GroupSelector.py (job_name = 'group_selector')
+    - bulk_import.py (job_name = 'bulk_import')
+    * Updates after each run with timestamp, status, and diagnostic details
+
+  Used by:
+    - Monitoring dashboards
+    - Debugging failed runs
+    - Scheduling logic to determine next run window
+  '''
+}
+
+Table crypto_asset_group_history {
+  id              bigserial   [pk, not null]
+  asset_id        uuid        [not null]
+  group_id        uuid        [not null]
+  event_type      varchar(10) [not null, note: 'JOINED or LEFT']
+  event_timestamp timestamptz [not null, default: `now()`]
+  market_cap_usd  numeric(20,4)
+  rank_in_group   integer
+  metadata        jsonb
+
+  indexes {
+    asset_id
+    group_id
+    event_timestamp
+    (asset_id, group_id)
+  }
+
+  Note: '''
+  Purpose:
+    Historical tracking of when assets enter and exit groups.
+    Provides audit trail and enables analysis of group composition changes over time.
+
+  Populated / updated by:
+    - GroupSelector.py
+      * Before rebuilding group membership, captures current state
+      * Compares old vs new membership and records JOINED/LEFT events
+      * Stores market cap and rank at time of event for context
+
+  Used by:
+    - Historical analysis of group membership changes
+    - Identifying when specific assets entered/exited groups
+    - Tracking volatility in group composition (e.g., how often TOP15 changes)
+
+  Event Types:
+    - JOINED: Asset became a member of the group
+    - LEFT: Asset was removed from the group
+  '''
+}
+
+// Relationships
+Ref: crypto_asset_price_daily.asset_id > crypto_asset.id [delete: cascade]
+Ref: crypto_asset_price_hourly.asset_id > crypto_asset.id [delete: cascade]
+Ref: crypto_asset_group.asset_id > crypto_asset.id [delete: cascade]
+Ref: crypto_asset_group.group_id > crypto_group.id [delete: cascade]
+Ref: crypto_asset_group_history.asset_id > crypto_asset.id [delete: cascade]
+Ref: crypto_asset_group_history.group_id > crypto_group.id [delete: cascade]</code></pre>
+            </div>
+
+            <p class="small text-muted mt-2 mb-0">
+                To update the schema visually, edit this DBML in dbdiagram.io and re-export the PNG/JPEG diagram
+                into <code>wwwroot/Media/</code> so this page stays in sync with the actual database.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Modal for Schema Diagram -->
+<div class="modal fade" id="schemaDiagramModal" tabindex="-1"
+     aria-labelledby="schemaDiagramModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen">
+        <div class="modal-content bg-black text-light">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="schemaDiagramModalLabel">
+                    Database Schema Diagram
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body d-flex justify-content-center align-items-center">
+                <img src="~/Media/DB Diagram_page_002.jpg"
+                     alt="Full-screen entity-relationship diagram of the crypto analytics database schema"
+                     class="img-fluid" />
+            </div>
+            <div class="modal-footer border-0 justify-content-between small text-muted">
+                <span>
+                    Visualized with
+                    <a href="https://dbdiagram.io" target="_blank" rel="noopener noreferrer" class="link-light">
+                        dbdiagram.io
+                    </a>.
+                </span>
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

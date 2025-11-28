@@ -1,0 +1,14 @@
+﻿@model List<DataWebApp.data.CryptoAsset>
+<h1>Crypto Assets</h1>
+<table class="table app-table">
+    <thead>...</thead>
+    <tbody>
+        @foreach (var a in Model)
+        {
+            <tr>
+                <td>@a.Symbol</td>
+                <td>@a.Name</td>
+            </tr>
+        }
+    </tbody>
+</table>

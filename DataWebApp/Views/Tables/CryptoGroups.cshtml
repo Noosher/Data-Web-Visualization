@@ -1,0 +1,143 @@
+﻿@model DataWebApp.Controllers.TablesController.CryptoGroupsPageViewModel
+
+@{
+    ViewData["Title"] = "Crypto Groups";
+}
+
+<div class="app-card">
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">Crypto Groups (crypto_group)</h1>
+            <p class="text-muted small mb-0">
+                Logical segments like TOP15, MEME_TOP5, L1_BLUECHIP used for ranking and thematic analysis.
+            </p>
+        </div>
+        <span class="badge rounded-pill app-badge-muted">
+            Dimension &middot; Group Definitions
+        </span>
+    </div>
+
+    <div class="app-card-body">
+
+        <!-- KPI Row -->
+        <div class="app-kpi-row mb-3">
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Total Groups</div>
+                <div class="app-kpi-value">@Model.TotalGroups</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Distinct Types</div>
+                <div class="app-kpi-value">@Model.DistinctTypes</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Total Memberships</div>
+                <div class="app-kpi-value">@Model.TotalMemberships</div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Left: Table preview -->
+            <div class="col-12 col-lg-7">
+                <div class="app-card-inner">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="h6 text-uppercase text-muted mb-0">Current Group Catalog</h2>
+                        <span class="small text-muted">
+                            Showing @Model.Groups.Count groups
+                        </span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 app-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Tag</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col" class="text-end">Members</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Groups.Any())
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted small">
+                                            No groups found. Run <code>GroupSelector.py</code> to initialize group metadata.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var g in Model.Groups)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="fw-semibold">@g.Tag</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge rounded-pill app-badge-muted text-uppercase">
+                                                    @g.Type
+                                                </span>
+                                            </td>
+                                            <td class="small">
+                                                @if (string.IsNullOrWhiteSpace(g.Description))
+                                                {
+                                                    <span class="text-muted">Not documented</span>
+                                                }
+                                                else
+                                                {
+                                                    @g.Description
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                <span>@g.CurrentMemberCount</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Explanation / usage -->
+            <div class="col-12 col-lg-5">
+                <div class="app-card-inner">
+                    <h2 class="h6 text-uppercase text-muted mb-2">How This Table Is Used</h2>
+                    <p class="small mb-2">
+                        <code>crypto_group</code> is the single source of truth for segment definitions:
+                        rank buckets like <code>TOP15</code> and thematic sets like <code>MEME_TOP5</code> and
+                        <code>DEFI_BLUECHIP</code>. Each group has a stable <strong>tag</strong> that is reused
+                        across ETL, dashboards, and this web app.
+                    </p>
+                    <p class="small mb-2">
+                        <strong>GroupSelector.py</strong> owns this table. On each run it:
+                    </p>
+                    <ul class="small mb-2">
+                        <li>Upserts group rows by <code>tag</code> with a <code>type</code> and <code>description</code>.</li>
+                        <li>Rebuilds membership via the <code>crypto_asset_group</code> bridge.</li>
+                        <li>Logs ETL status in <code>job_run_log</code>.</li>
+                    </ul>
+
+                    <h3 class="fw-semibold fs-6 mt-3 mb-1">Analytics Patterns</h3>
+                    <p class="small mb-2">
+                        In SQL or Power BI, this table is typically joined to the bridge and asset dimension:
+                    </p>
+<pre class="small text-monospace mb-2" style="white-space: pre; overflow:auto;">
+SELECT g.tag,
+       g.type,
+       COUNT(ag.asset_id) AS member_count
+FROM crypto_group g
+LEFT JOIN crypto_asset_group ag ON ag.group_id = g.id
+GROUP BY g.tag, g.type
+ORDER BY member_count DESC;
+</pre>
+                    <p class="small mb-0">
+                        Keeping group definitions centralized here avoids “shadow definitions” of groups spread
+                        across reports, Python notebooks, and application code.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

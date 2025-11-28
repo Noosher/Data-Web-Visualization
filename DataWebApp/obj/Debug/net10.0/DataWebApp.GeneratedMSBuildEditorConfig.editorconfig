@@ -19,41 +19,57 @@ build_property.TargetFrameworkIdentifier = .NETCoreApp
 build_property.TargetFrameworkVersion = v10.0
 build_property.RootNamespace = DataWebApp
 build_property.RootNamespace = DataWebApp
-build_property.ProjectDir = C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\
+build_property.ProjectDir = C:\Users\TEMP1\Documents\Projects\Data-Web-Visualization\DataWebApp\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 9.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp
+build_property.MSBuildProjectDirectory = C:\Users\TEMP1\Documents\Projects\Data-Web-Visualization\DataWebApp
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 10.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/rober/OneDrive/Documents/Project/DataProjects/Data-Web-Visualization/DataWebApp/Views/Home/Index.cshtml]
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Database/Overview.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGF0YWJhc2VcT3ZlcnZpZXcuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/rober/OneDrive/Documents/Project/DataProjects/Data-Web-Visualization/DataWebApp/Views/Home/Privacy.cshtml]
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Home/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/rober/OneDrive/Documents/Project/DataProjects/Data-Web-Visualization/DataWebApp/Views/Shared/Error.cshtml]
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/rober/OneDrive/Documents/Project/DataProjects/Data-Web-Visualization/DataWebApp/Views/Shared/_ValidationScriptsPartial.cshtml]
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/rober/OneDrive/Documents/Project/DataProjects/Data-Web-Visualization/DataWebApp/Views/_ViewImports.cshtml]
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Tables/CryptoAssetGroups.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVzXENyeXB0b0Fzc2V0R3JvdXBzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Tables/CryptoAssets.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVzXENyeXB0b0Fzc2V0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Tables/CryptoGroups.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVzXENyeXB0b0dyb3Vwcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/rober/OneDrive/Documents/Project/DataProjects/Data-Web-Visualization/DataWebApp/Views/_ViewStart.cshtml]
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/rober/OneDrive/Documents/Project/DataProjects/Data-Web-Visualization/DataWebApp/Views/Shared/_Layout.cshtml]
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = b-zna8u04qwi

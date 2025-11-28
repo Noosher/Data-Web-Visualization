@@ -1,6 +1,5 @@
 ﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
- @* default theme is dark; toggle switches this *@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,9 +10,6 @@
     <link rel="stylesheet" href="~/DataWebApp.styles.css" asp-append-version="true" />
 </head>
 <body>
-    @* =====================================================================
-       NAVBAR / HEADER
-       ===================================================================== *@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm app-navbar border-bottom">
             <div class="container-fluid">
@@ -35,12 +31,97 @@
                                 <span>Dashboard</span>
                             </a>
                         </li>
+
+                        <!-- DATABASE DROPDOWN -->
+                        <li class="nav-item dropdown app-nav-dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="databaseDropdown"
+                               role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>Database</span>
+                            </a>
+                            <ul class="dropdown-menu app-dropdown-menu" aria-labelledby="databaseDropdown">
+                                <!-- Database Overview Section -->
+                                <li class="dropdown-header px-3 small app-dropdown-header-main">
+                                    <span class="app-dropdown-icon">📊</span> Database
+                                </li>
+                                <li>
+                                    <a class="dropdown-item app-dropdown-item-featured"
+                                       asp-controller="Database" asp-action="Overview">
+                                        <span class="app-dropdown-item-icon">🗺️</span>
+                                        <span class="app-dropdown-item-content">
+                                            <span class="app-dropdown-item-title">Database Overview</span>
+                                            <span class="app-dropdown-item-desc">
+                                                Full schema diagram &amp; DBML source
+                                            </span>
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li><hr class="dropdown-divider" /></li>
+
+                                <!-- Tables Section -->
+                                <li class="dropdown-header px-3 small app-dropdown-header-main">
+                                    <span class="app-dropdown-icon">🗃️</span> Tables
+                                </li>
+
+                                <li class="dropdown-header px-3 small app-dropdown-header-sub">
+                                    Core Dimensions
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Tables" asp-action="CryptoAssets">
+                                        Crypto Assets
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Tables" asp-action="CryptoGroups">
+                                        Crypto Groups
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Tables" asp-action="CryptoAssetGroups">
+                                        Asset ↔ Group Membership
+                                    </a>
+                                </li>
+
+                                <li><hr class="dropdown-divider" /></li>
+
+                                <li class="dropdown-header px-3 small app-dropdown-header-sub">
+                                    Price History
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Tables" asp-action="CryptoAssetPriceDaily">
+                                        Daily Prices
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Tables" asp-action="CryptoAssetPriceHourly">
+                                        Hourly Prices
+                                    </a>
+                                </li>
+
+                                <li><hr class="dropdown-divider" /></li>
+
+                                <li class="dropdown-header px-3 small app-dropdown-header-sub">
+                                    Operational Metadata
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Tables" asp-action="CryptoAssetGroupHistory">
+                                        Group History Events
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Tables" asp-action="JobRunLogs">
+                                        Job Run Logs
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">
                                 <span>Privacy</span>
                             </a>
                         </li>
-                        @* placeholder for tech stack page *@
+
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="TechStack">
                                 <span>Tech Stack</span>
@@ -52,7 +133,6 @@
                         Preview Build
                     </span>
 
-                    @* THEME TOGGLE SWITCH (inline, right side) *@
                     <div class="app-theme-switch-wrapper ms-2">
                         <input type="checkbox" id="themeToggle" class="app-theme-switch-input" />
                         <label for="themeToggle" class="app-theme-switch" aria-label="Toggle light/dark mode">
@@ -70,11 +150,6 @@
         </nav>
     </header>
 
-
-
-    @* =====================================================================
-       MAIN APP SHELL
-       ===================================================================== *@
     <div class="app-shell">
         <div class="container app-main-container">
             <main role="main" class="pb-3 app-main">
@@ -83,9 +158,6 @@
         </div>
     </div>
 
-
-
-    @* STICKY ATTRIBUTION FOOTER (COINGECKO + NEON) *@
     <footer class="cg-footer">
         <div class="container-fluid d-flex justify-content-center align-items-center small">
             <span class="me-2">
@@ -94,30 +166,24 @@
                     CoinGecko
                 </a>
             </span>
-
             <span class="text-muted">|</span>
-
             <span class="ms-2">
                 Database hosting provided by
                 <a href="https://neon.tech" target="_blank" rel="noopener noreferrer">
                     Neon Postgres
                 </a>
             </span>
-
             <span class="ms-2 text-muted d-none d-md-inline">
                 (Uses third-party services; no affiliation or endorsement implied.)
             </span>
         </div>
     </footer>
 
-
-
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
-    @* THEME TOGGLER SCRIPT WITH PERSISTENCE *@
     <script>
         (function () {
             const root = document.documentElement;
@@ -135,8 +201,7 @@
             };
 
             toggle.addEventListener('change', function () {
-                const next = this.checked ? 'dark' : 'light';
-                applyTheme(next);
+                applyTheme(this.checked ? 'dark' : 'light');
             });
         })();
     </script>

@@ -1,5 +1,11 @@
+/* =========================================================
+   Base HTML / Body
+   ========================================================= */
+
 html {
     font-size: 14px;
+    position: relative;
+    min-height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -8,191 +14,259 @@ html {
     }
 }
 
-.btn:focus,
-.btn:active:focus,
-.btn-link.nav-link:focus,
-.form-control:focus,
-.form-check-input:focus {
+body {
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background-color: #050509; /* base behind everything */
+    color: var(--app-text); /* always use theme token */
+    margin-bottom: 60px;
+}
+
+/* Bootstrap focus tweak */
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus,
+.form-control:focus, .form-check-input:focus {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-html {
-    position: relative;
-    min-height: 100%;
-}
+/* =========================================================
+   Theme Tokens (Light / Dark)
+   ========================================================= */
 
-/* Keep original form-floating tweaks */
-.form-floating > .form-control-plaintext::placeholder,
-.form-floating > .form-control::placeholder {
-    color: var(--bs-secondary-color);
-    text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder,
-.form-floating > .form-control:focus::placeholder {
-    text-align: start;
-}
-
-
-
-/* =======================================================================
-   STICKY ATTRIBUTION FOOTER (COINGECKO + NEON)
-   ======================================================================= */
-.cg-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 0.15rem 0.75rem;
-    background-color: #111;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    font-size: 0.75rem;
-    z-index: 1030;
-    color: #ccc;
-}
-
-    .cg-footer a {
-        color: #c1e4ff;
-        text-decoration: none;
-    }
-
-        .cg-footer a:hover {
-            text-decoration: underline;
-        }
-/* ======================================================================= */
-
-
-
-/* =======================================================================
-   MODERN APP LAYOUT + LIGHT/DARK THEME
-   ======================================================================= */
-
-/* ---------- THEME TOKENS (LIGHT MODE DEFAULT) ---------- */
 :root {
     --app-bg: #f3f4f6;
     --app-bg-elevated: #ffffff;
-    --app-bg-elevated-soft: #f9fafb;
-    --app-text: #111827;
-    --app-text-muted: #6b7280;
-    --app-border-subtle: rgba(148, 163, 184, 0.35);
-    --app-accent: #3b82f6;
-    --app-accent-soft: rgba(59, 130, 246, 0.15);
-    --app-nav-bg: rgba(255, 255, 255, 0.92);
-    --app-nav-border: rgba(148, 163, 184, 0.4);
-    --app-shadow-elevated: 0 18px 45px rgba(15, 23, 42, 0.18);
+    --app-bg-subtle: #e5e7eb;
+    /* TEXT – MASTER COLORS */
+    --app-text: #111827; /* main text on light */
+    --app-text-muted: #6b7280; /* muted text on light */
+
+    --app-border-subtle: rgba(15, 23, 42, 0.08);
+    --app-border-strong: rgba(15, 23, 42, 0.16);
+    --app-accent: #2563eb;
+    --app-accent-soft: rgba(37, 99, 235, 0.14);
+    --app-navbar-bg: rgba(255, 255, 255, 0.96);
+    --app-navbar-border: rgba(15, 23, 42, 0.08);
+    --app-shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.12);
+    --app-shadow-card: 0 18px 45px rgba(15, 23, 42, 0.18);
 }
 
-/* ---------- DARK MODE OVERRIDES ---------- */
 html[data-theme="dark"] {
-    --app-bg: #020617;
-    --app-bg-elevated: #020617;
-    --app-bg-elevated-soft: #020617;
-    --app-text: #e5e7eb;
-    --app-text-muted: #9ca3af;
-    --app-border-subtle: rgba(31, 41, 55, 0.9);
-    --app-accent: #60a5fa;
-    --app-accent-soft: rgba(56, 189, 248, 0.16);
-    --app-nav-bg: rgba(15, 23, 42, 0.96);
-    --app-nav-border: rgba(75, 85, 99, 0.8);
-    --app-shadow-elevated: 0 18px 45px rgba(0, 0, 0, 0.65);
-}
+    --app-bg: radial-gradient(circle at top, #020617 0, #020617 40%, #020617 100%);
+    --app-bg-elevated: rgba(15, 23, 42, 0.98);
+    --app-bg-subtle: rgba(15, 23, 42, 0.85);
+    /* TEXT – MASTER COLORS */
+    --app-text: #f9fafb; /* main text on dark */
+    --app-text-muted: #cbd5e1; /* muted but still high contrast */
 
-/* ---------- GLOBAL SHELL OVERRIDES ---------- */
-body {
-    margin: 0;
-    padding-bottom: 2.5rem; /* room for sticky footer */
-    background-color: var(--app-bg);
-    color: var(--app-text);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    -webkit-font-smoothing: antialiased;
+    --app-border-subtle: rgba(148, 163, 184, 0.2);
+    --app-border-strong: rgba(148, 163, 184, 0.35);
+    --app-accent: #38bdf8;
+    --app-accent-soft: rgba(56, 189, 248, 0.2);
+    --app-navbar-bg: rgba(15, 23, 42, 0.96);
+    --app-navbar-border: rgba(148, 163, 184, 0.3);
+    --app-shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.8);
+    --app-shadow-card: 0 22px 60px rgba(15, 23, 42, 0.9);
 }
 
 /* Smooth theme transitions */
-body,
-.app-navbar,
-.app-main,
-.app-card,
-.cg-footer {
+body, .app-navbar, .app-main, .app-card, .app-card-inner,
+.cg-footer, .app-dropdown-menu {
     transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
 }
 
+/* =========================================================
+   Global Typography & Links (Uniform Across Site)
+   ========================================================= */
 
-
-/* ---------- NAVBAR / HEADER ---------- */
-.app-navbar {
-    background-color: var(--app-nav-bg) !important;
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--app-nav-border);
-    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.18);
-    padding-block: 0.35rem;
+body,
+.app-shell,
+.app-card,
+.app-card-body,
+.app-card-inner {
+    color: var(--app-text);
 }
 
-    .app-navbar .navbar-brand {
-        color: var(--app-text);
-        font-size: 0.98rem;
+    /* Keep muted text readable */
+    .app-shell .text-muted,
+    .app-card .text-muted,
+    .app-card-inner .text-muted {
+        color: var(--app-text-muted) !important;
+        opacity: 1;
     }
 
-        .app-navbar .navbar-brand:hover {
-            color: var(--app-accent);
+    /* Headings */
+    .app-shell h1,
+    .app-shell h2,
+    .app-shell h3,
+    .app-shell h4,
+    .app-shell h5,
+    .app-shell h6 {
+        color: var(--app-text);
+    }
+
+    /* Links */
+    .app-shell a {
+        color: var(--app-accent);
+        text-decoration: none;
+    }
+
+        .app-shell a:hover,
+        .app-shell a:focus {
+            text-decoration: underline;
         }
+
+/* Code & preformatted text inherit surrounding color */
+pre,
+code {
+    color: inherit;
+}
+
+/* Monospace utility */
+.text-monospace {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* =========================================================
+   App Shell Layout
+   ========================================================= */
+
+.app-shell {
+    min-height: 100vh;
+    padding-bottom: 56px; /* keep main content above sticky footer */
+    background: var(--app-bg);
+}
+
+.app-main-container {
+    max-width: 1120px;
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+}
+
+.app-main {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+}
+
+/* =========================================================
+   Navbar / Branding
+   ========================================================= */
+
+.app-navbar {
+    background-color: var(--app-navbar-bg);
+    border-color: var(--app-navbar-border) !important;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px);
+}
+
+.app-nav-links .nav-link {
+    color: var(--app-text-muted);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+    .app-nav-links .nav-link:hover,
+    .app-nav-links .nav-link:focus,
+    .app-nav-links .nav-link.active {
+        color: var(--app-text);
+    }
 
 .brand-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.8rem;
-    height: 1.8rem;
+    width: 30px;
+    height: 30px;
     border-radius: 999px;
-    background: radial-gradient(circle at 0% 0%, #22c55e, #0ea5e9);
-    color: #0b1120;
-    font-size: 0.9rem;
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    color: #f9fafb;
+    font-size: 0.85rem;
     font-weight: 700;
+    text-transform: uppercase;
 }
 
-/* Env pill */
+/* Preview pill */
 .app-env-pill {
-    border-radius: 999px;
-    background: rgba(34, 197, 94, 0.08);
-    color: var(--app-text-muted);
-    border: 1px solid rgba(34, 197, 94, 0.25);
+    background-color: var(--app-accent-soft);
+    color: var(--app-accent);
+    border: 1px solid var(--app-accent-soft);
     font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
-/* Navigation links */
-.app-nav-links .nav-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding-inline: 0.9rem;
-    padding-block: 0.45rem;
-    border-radius: 999px;
+/* =========================================================
+   Cards & Inner Layout
+   ========================================================= */
+
+.app-card {
+    width: 100%;
+    border-radius: 1.25rem;
+    border: 1px solid var(--app-border-subtle);
+    background: linear-gradient(135deg, rgba(148, 163, 184, 0.05), rgba(15, 23, 42, 0.2)), var(--app-bg-elevated);
+    box-shadow: var(--app-shadow-card);
+    overflow: hidden;
+}
+
+.app-card-header {
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid var(--app-border-subtle);
+    background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 55%);
+}
+
+.app-card-body {
+    padding: 1.25rem;
+}
+
+.app-card-inner {
+    padding: 1rem 1.1rem;
+    border-radius: 0.9rem;
+    border: 1px dashed var(--app-border-subtle);
+    background-color: rgba(15, 23, 42, 0.25);
+}
+
+/* Light mode: inner cards light so dark text is clear */
+html[data-theme="light"] .app-card-inner {
+    background-color: #f9fafb;
+}
+
+/* Generic badge style */
+.app-badge-muted {
+    background-color: var(--app-accent-soft);
+    color: var(--app-accent);
+    border: 1px solid var(--app-accent-soft);
+}
+
+/* Tables inside cards */
+.app-table thead th {
+    border-bottom-color: var(--app-border-subtle);
     color: var(--app-text-muted);
-    transition: background-color 0.16s ease-out, color 0.16s ease-out, transform 0.08s ease-out;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
 
-    .app-nav-links .nav-link:hover {
-        color: var(--app-text);
-        background-color: var(--app-accent-soft);
-        transform: translateY(-1px);
-    }
+.app-table tbody td {
+    border-top-color: rgba(148, 163, 184, 0.16);
+    font-size: 0.86rem;
+    color: var(--app-text);
+}
 
-    .app-nav-links .nav-link.active,
-    .app-nav-links .nav-link[aria-current="page"] {
-        color: var(--app-accent);
-        background-color: var(--app-accent-soft);
-    }
+/* =========================================================
+   Theme Toggle Switch
+   ========================================================= */
 
-
-
-/* ---------- THEME SWITCH (INLINE, RIGHT SIDE) ---------- */
 .app-theme-switch-wrapper {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
 }
 
 .app-theme-switch-input {
-    display: none;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .app-theme-switch {
@@ -203,105 +277,382 @@ body,
 
 .app-theme-switch-track {
     position: relative;
-    width: 3.1rem;
-    height: 1.6rem;
+    width: 56px;
+    height: 28px;
     border-radius: 999px;
-    background-color: var(--app-border-subtle);
-    padding-inline: 0.35rem;
+    background: linear-gradient(135deg, #0f172a, #020617);
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    padding: 2px;
     display: flex;
     align-items: center;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8), 0 12px 30px rgba(0, 0, 0, 0.8);
     overflow: hidden;
 }
 
 .app-theme-switch-icons {
+    position: absolute;
+    inset: 0;
     display: flex;
     justify-content: space-between;
-    width: 100%;
-    font-size: 0.8rem;
-    color: var(--app-text-muted);
+    align-items: center;
+    padding: 0 7px;
+    font-size: 0.75rem;
+    pointer-events: none;
 }
 
     .app-theme-switch-icons .sun,
     .app-theme-switch-icons .moon {
-        transition: opacity 0.25s ease, transform 0.25s ease;
+        transition: opacity 0.3s ease, transform 0.3s ease;
     }
 
 .app-theme-switch-thumb {
-    position: absolute;
-    width: 1.25rem;
-    height: 1.25rem;
+    position: relative;
+    width: 22px;
+    height: 22px;
     border-radius: 999px;
+    background: radial-gradient(circle at 30% 30%, #facc15, #fb923c);
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9), 0 10px 30px rgba(0, 0, 0, 0.85);
+    transform: translateX(0);
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+/* Light vs Dark icon states */
+html[data-theme="dark"] .app-theme-switch-thumb {
+    transform: translateX(26px);
+    background: radial-gradient(circle at 30% 30%, #e5e7eb, #9ca3af);
+}
+
+html[data-theme="dark"] .app-theme-switch-icons .sun {
+    opacity: 0.3;
+    transform: translateX(-3px);
+}
+
+html[data-theme="dark"] .app-theme-switch-icons .moon {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+html[data-theme="light"] .app-theme-switch-icons .sun {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+html[data-theme="light"] .app-theme-switch-icons .moon {
+    opacity: 0.3;
+    transform: translateX(3px);
+}
+
+/* =========================================================
+   Database Dropdown Styling
+   ========================================================= */
+
+/* Toggle caret spacing */
+.app-nav-dropdown .nav-link.dropdown-toggle::after {
+    margin-left: 0.35rem;
+    transform: translateY(1px);
+}
+
+/* Dropdown menu styling */
+.app-dropdown-menu {
     background-color: var(--app-bg-elevated);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
-    transform: translateX(0);
-    transition: transform 0.25s ease, background-color 0.25s ease;
+    border-radius: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    padding: 0.5rem 0;
+    min-width: 20rem;
+    font-size: 0.9rem;
+    transition: opacity 0.18s ease, transform 0.18s ease, background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, color 0.35s ease;
 }
 
-/* Light vs dark states (checkbox drives these) */
-.app-theme-switch-input:not(:checked) ~ .app-theme-switch .sun {
-    opacity: 0.9;
-    transform: translateX(0);
+/* Desktop: open on hover */
+@media (min-width: 992px) {
+    .app-nav-dropdown {
+        position: relative;
+    }
+
+        .app-nav-dropdown .dropdown-menu {
+            display: block;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(0);
+        }
+
+        .app-nav-dropdown:hover .dropdown-menu,
+        .app-nav-dropdown:focus-within .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0.35rem);
+        }
 }
 
-.app-theme-switch-input:not(:checked) ~ .app-theme-switch .moon {
-    opacity: 0.4;
+/* Default header style */
+.app-dropdown-menu .dropdown-header {
+    color: var(--app-text-muted);
+}
+
+/* Main section headers (Database / Tables) */
+.app-dropdown-menu .app-dropdown-header-main {
+    color: var(--app-accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Dark: pop more */
+html[data-theme="dark"] .app-dropdown-menu .app-dropdown-header-main {
+    color: #e5f2ff;
+}
+
+/* Light: navy-ish */
+html[data-theme="light"] .app-dropdown-menu .app-dropdown-header-main {
+    color: #1e3a8a;
+}
+
+.app-dropdown-icon {
+    font-size: 0.85rem;
+}
+
+/* Subsection headers (Core Dimensions / Price History / Operational Metadata) */
+.app-dropdown-menu .app-dropdown-header-sub {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.68rem;
+    margin-top: 0.25rem;
+    color: #e5e7eb; /* high contrast on dark */
+}
+
+/* Light mode subsection headers */
+html[data-theme="light"] .app-dropdown-menu .app-dropdown-header-sub {
+    color: #4b5563;
+}
+
+/* Dropdown items */
+.app-dropdown-menu .dropdown-item {
+    color: var(--app-text-muted);
+    padding: 0.45rem 1rem 0.45rem 1.5rem;
+}
+
+    .app-dropdown-menu .dropdown-item:hover,
+    .app-dropdown-menu .dropdown-item:focus {
+        background-color: rgba(255, 255, 255, 0.04);
+        color: var(--app-text);
+    }
+
+/* Featured dropdown item (Database Overview) */
+.app-dropdown-item-featured {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem !important;
+    margin: 0.35rem 0.75rem;
+    box-sizing: border-box;
+    max-width: calc(100% - 1.5rem);
+    width: 100%;
+    border-radius: 0.6rem;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+html[data-theme="light"] .app-dropdown-item-featured {
+    background: rgba(37, 99, 235, 0.08);
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.app-dropdown-item-featured:hover,
+.app-dropdown-item-featured:focus {
+    background: rgba(56, 189, 248, 0.18) !important;
+    border-color: rgba(56, 189, 248, 0.4);
     transform: translateX(2px);
 }
 
-.app-theme-switch-input:checked ~ .app-theme-switch .sun {
-    opacity: 0.4;
-    transform: translateX(-2px);
+html[data-theme="light"] .app-dropdown-item-featured:hover,
+html[data-theme="light"] .app-dropdown-item-featured:focus {
+    background: rgba(37, 99, 235, 0.14) !important;
+    border-color: rgba(37, 99, 235, 0.35);
 }
 
-.app-theme-switch-input:checked ~ .app-theme-switch .moon {
-    opacity: 0.95;
-    transform: translateX(0);
+.app-dropdown-item-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
 }
 
-.app-theme-switch-input:checked ~ .app-theme-switch .app-theme-switch-thumb {
-    transform: translateX(1.4rem);
+.app-dropdown-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
 }
 
-
-
-/* ---------- MAIN APP SURFACE ---------- */
-.app-shell {
-    min-height: calc(100vh - 3rem);
-    padding-top: 1.5rem;
-}
-
-.app-main-container {
-    max-width: 1180px;
-}
-
-.app-main {
-    background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.06), transparent 52%), radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 60%);
-    padding: 1.35rem;
-    border-radius: 1.25rem;
-    border: 1px solid var(--app-border-subtle);
-    background-color: var(--app-bg-elevated);
-    box-shadow: var(--app-shadow-elevated);
-}
-
-
-
-/* ---------- GENERIC CARDS & TYPOGRAPHY HELPERS ---------- */
-.app-card {
-    background-color: var(--app-bg-elevated-soft);
-    border-radius: 1rem;
-    border: 1px solid var(--app-border-subtle);
-    padding: 1rem 1.1rem;
-    margin-bottom: 1rem;
-}
-
-.app-section-title {
-    font-size: 1.1rem;
+.app-dropdown-item-title {
     font-weight: 600;
     color: var(--app-text);
-    margin-bottom: 0.5rem;
+    font-size: 0.88rem;
 }
 
-.app-section-subtitle {
-    font-size: 0.85rem;
+.app-dropdown-item-desc {
+    font-size: 0.72rem;
     color: var(--app-text-muted);
+    opacity: 0.85;
+}
+
+/* Divider */
+.app-dropdown-menu .dropdown-divider {
+    border-color: var(--app-border-subtle);
+    margin: 0.4rem 0;
+}
+
+/* =========================================================
+   Code Block Styling (DBML snippet)
+   ========================================================= */
+
+.app-code-block {
+    background-color: rgba(15, 23, 42, 0.9);
+    color: #e5e7eb;
+}
+
+html[data-theme="light"] .app-code-block {
+    background-color: #020617;
+    color: #e5e7eb;
+}
+
+/* =========================================================
+   Sticky Attribution Footer (Global)
+   ========================================================= */
+
+.cg-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 40px;
+    background-color: rgba(15, 23, 42, 0.96);
+    color: #e5e7eb;
+    border-top: 1px solid var(--app-border-subtle);
+    font-size: 0.75rem;
+    z-index: 1030;
+}
+
+    .cg-footer .text-muted {
+        color: rgba(209, 213, 219, 0.9) !important;
+        opacity: 1;
+    }
+
+    .cg-footer a {
+        color: var(--app-accent);
+        text-decoration: none;
+    }
+
+        .cg-footer a:hover {
+            text-decoration: underline;
+        }
+
+/* =========================================================
+   KPI Row Chips (used on table pages)
+   ========================================================= */
+
+.app-kpi-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.app-kpi-chip {
+    min-width: 140px;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--app-border-subtle);
+    background-color: rgba(15, 23, 42, 0.35);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.6);
+}
+
+html[data-theme="light"] .app-kpi-chip {
+    background-color: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.app-kpi-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--app-text-muted);
+    margin-bottom: 0.15rem;
+}
+
+.app-kpi-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--app-text);
+}
+
+/* =========================================================
+   Dark mode table contrast tweaks
+   ========================================================= */
+
+/* Solid inner card behind table */
+html[data-theme="dark"] .app-card-inner {
+    background-color: #020617;
+    border-color: #1f2937;
+}
+
+/* Table base */
+html[data-theme="dark"] .app-table {
+    border-color: #1f2937;
+}
+
+    /* Override Bootstrap's white cell background */
+    html[data-theme="dark"] .app-table > :not(caption) > * > * {
+        background-color: #020617 !important; /* main row bg */
+        color: #e5e7eb; /* light text */
+        border-top-color: #374151;
+    }
+
+    /* Header cells darker + high contrast */
+    html[data-theme="dark"] .app-table thead > tr > th {
+        background-color: #030712 !important;
+        color: #f9fafb;
+        border-bottom-color: #4b5563;
+    }
+
+    /* Muted text inside table */
+    html[data-theme="dark"] .app-table .text-muted {
+        color: #9ca3af !important;
+    }
+
+    /* Row hover */
+    html[data-theme="dark"] .app-table tbody tr:hover > * {
+        background-color: #111827 !important;
+    }
+
+/* Badges in Type column */
+html[data-theme="dark"] .app-badge-muted {
+    background-color: #111827;
+    color: #e5e7eb;
+    border-color: #1f2937;
+}
+
+/* Code blocks in dark mode */
+html[data-theme="dark"] pre {
+    background-color: #020617;
+    color: #e5e7eb;
+    border: 1px solid #1f2937;
+}
+
+/* Sigma Overlap badge */
+.sigma-overlap-badge {
+    background-color: #facc15; /* yellow */
+    color: #1f2937; /* dark text */
+    border: 1px solid rgba(234, 179, 8, 0.9);
+    font-size: 0.75rem;
+}
+
+html[data-theme="dark"] .sigma-overlap-badge {
+    background-color: #facc15;
+    color: #111827;
 }
