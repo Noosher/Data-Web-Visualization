@@ -54,6 +54,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVzXENyeXB0b0Fzc2V0R3JvdXBzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Tables/CryptoAssetPriceDaily.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVzXENyeXB0b0Fzc2V0UHJpY2VEYWlseS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Tables/CryptoAssetPriceHourly.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVzXENyeXB0b0Fzc2V0UHJpY2VIb3VybHkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/TEMP1/Documents/Projects/Data-Web-Visualization/DataWebApp/Views/Tables/CryptoAssets.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVzXENyeXB0b0Fzc2V0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

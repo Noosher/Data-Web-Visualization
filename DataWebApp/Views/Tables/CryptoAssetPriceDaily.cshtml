@@ -1,0 +1,176 @@
+﻿@model List<DataWebApp.data.CryptoAssetPriceDaily>
+
+@{
+    ViewData["Title"] = "Daily Price History";
+
+    var totalRows = Model?.Count ?? 0;
+
+    var distinctAssets = Model?
+        .Where(r => r.Asset != null && !string.IsNullOrWhiteSpace(r.Asset.Symbol))
+        .Select(r => r.Asset.Symbol)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .Count() ?? 0;
+
+    DateTime? minDate = (Model != null && Model.Any())
+        ? Model.Min(r => r.ObservedAt)
+        : (DateTime?)null;
+
+    DateTime? maxDate = (Model != null && Model.Any())
+        ? Model.Max(r => r.ObservedAt)
+        : (DateTime?)null;
+
+    var currency = Model?
+        .Select(r => r.CurrencyCode)
+        .FirstOrDefault(c => !string.IsNullOrWhiteSpace(c)) ?? "USD";
+}
+
+<div class="app-card">
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">Daily Price History (crypto_asset_price_daily)</h1>
+            <p class="text-muted small mb-0">
+                End-of-day prices and market caps for tracked assets, used for higher-level trend analysis.
+            </p>
+        </div>
+        <span class="badge rounded-pill app-badge-muted">
+            Fact Table &middot; Daily Granularity
+        </span>
+    </div>
+
+    <div class="app-card-body">
+
+        <!-- KPI Row -->
+        <div class="app-kpi-row mb-3">
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Total Rows</div>
+                <div class="app-kpi-value">@totalRows</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Distinct Assets</div>
+                <div class="app-kpi-value">@distinctAssets</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Price Currency</div>
+                <div class="app-kpi-value">@currency</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Date Range</div>
+                <div class="app-kpi-value">
+                    @if (minDate.HasValue && maxDate.HasValue)
+                    {
+                        @($"{minDate.Value:yyyy-MM-dd} → {maxDate.Value:yyyy-MM-dd}")
+                    }
+                    else
+                    {
+                        @("N/A")
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Left: Daily price table -->
+            <div class="col-12 col-lg-7">
+                <div class="app-card-inner">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="h6 text-uppercase text-muted mb-0">Sample of Latest Daily Prices</h2>
+                        <span class="small text-muted">
+                            Showing @totalRows rows (capped at 500 in controller)
+                        </span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 420px; overflow:auto;">
+                        <table class="table table-sm align-middle mb-0 app-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date (UTC)</th>
+                                    <th scope="col">Symbol</th>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Price (@currency)</th>
+                                    <th scope="col">Market Cap (USD)</th>
+                                    <th scope="col">24h Volume (USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model == null || !Model.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted small">
+                                            No daily price rows found. After running your price ETL,
+                                            this table will reflect the latest end-of-day snapshots.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var r in Model
+                                    .OrderByDescending(x => x.ObservedAt)
+                                    .ThenBy(x => x.Asset.Symbol))
+                                    {
+                                        var symbol = r.Asset?.Symbol ?? "(unknown)";
+                                        var name = r.Asset?.Name ?? "(unknown)";
+
+                                        <tr>
+                                            <td class="small text-nowrap">
+                                                @r.ObservedAt.ToUniversalTime().ToString("yyyy-MM-dd")
+                                            </td>
+                                            <td class="fw-semibold text-monospace">@symbol</td>
+                                            <td class="small">@name</td>
+                                            <td class="small text-nowrap">
+                                                @r.Price.ToString("N6")
+                                            </td>
+                                            <td class="small text-nowrap">
+                                                @(r.MarketCapUsd.HasValue? r.MarketCapUsd.Value.ToString("N2") : "—")
+                                            </td>
+                                            <td class="small text-nowrap">
+                                                @(r.Volume24hUsd.HasValue? r.Volume24hUsd.Value.ToString("N2") : "—")
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Explanation / usage -->
+            <div class="col-12 col-lg-5">
+                <div class="app-card-inner">
+                    <h2 class="h6 text-uppercase text-muted mb-2">How This Table Is Used</h2>
+                    <p class="small mb-2">
+                        <code>crypto_asset_price_daily</code> stores one row per asset per day, representing
+                        the end-of-day price state recorded by your ETL. It’s ideal for trend lines,
+                        moving averages, and long-range performance charts.
+                    </p>
+                    <ul class="small mb-2">
+                        <li>Joined to <code>crypto_asset</code> on <code>asset_id</code> for symbol/name context.</li>
+                        <li>
+                            <code>price</code> is stored in <code>currency_code</code> (e.g., USD), while
+                            <code>market_cap_usd</code> and <code>volume_24h_usd</code> are explicitly normalized to USD.
+                        </li>
+                        <li>Feeds Power BI visuals for “price over time” at a daily grain.</li>
+                    </ul>
+
+                    <h3 class="fw-semibold fs-6 mt-3 mb-1">Example Query</h3>
+<pre class="small text-monospace mb-2" style="white-space: pre; overflow:auto;">
+SELECT a.symbol,
+       p.observed_at::date AS price_date,
+       p.price,
+       p.market_cap_usd,
+       p.volume_24h_usd
+FROM crypto_asset_price_daily p
+JOIN crypto_asset a ON a.id = p.asset_id
+WHERE a.symbol = 'BTC'
+ORDER BY p.observed_at;
+</pre>
+
+                    <p class="small mb-0">
+                        Daily prices are usually the backbone for higher-level analytics: rolling 7/30/90 day
+                        returns, rank changes, and cross-asset comparisons without the noise of intraday swings.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
