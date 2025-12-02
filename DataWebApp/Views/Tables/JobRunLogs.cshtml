@@ -1,0 +1,373 @@
+﻿@model List<DataWebApp.data.JobRunLog>
+
+@using System.Reflection
+
+@{
+    ViewData["Title"] = "Job Run Logs";
+
+    var totalRows = Model?.Count ?? 0;
+
+    // We know JobName exists because it's the PK in OnModelCreating
+    var distinctJobs = Model?
+        .Select(j => j.JobName)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .Count() ?? 0;
+
+    // Reflect over JobRunLog to get scalar properties (no navs/collections)
+    var jobType = typeof(DataWebApp.data.JobRunLog);
+    var scalarProps = jobType
+        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        .Where(p =>
+            p.PropertyType == typeof(string) ||
+            p.PropertyType.IsValueType ||
+            (Nullable.GetUnderlyingType(p.PropertyType)?.IsValueType ?? false))
+        .ToList();
+
+    // Locate specific props if they exist
+    var lastStatusProp = jobType.GetProperty("LastStatus");
+    var detailsProp = jobType.GetProperty("Details");
+    var jobNameProp = jobType.GetProperty("JobName");
+
+    // Try to compute an overall time window from any DateTime / DateTime? properties
+    DateTime? earliest = null;
+    DateTime? latest = null;
+
+    if (Model != null && Model.Any())
+    {
+        var dateProps = scalarProps
+            .Where(p =>
+                p.PropertyType == typeof(DateTime) ||
+                p.PropertyType == typeof(DateTime?))
+            .ToList();
+
+        if (dateProps.Any())
+        {
+            var allDates = new List<DateTime>();
+
+            foreach (var row in Model)
+            {
+                foreach (var p in dateProps)
+                {
+                    var val = p.GetValue(row);
+
+                    if (val is DateTime dt)
+                    {
+                        allDates.Add(dt);
+                    }
+                    else
+                    {
+                        var nullableDt = val as DateTime?;
+                        if (nullableDt.HasValue)
+                        {
+                            allDates.Add(nullableDt.Value);
+                        }
+                    }
+                }
+            }
+
+            if (allDates.Any())
+            {
+                earliest = allDates.Min();
+                latest = allDates.Max();
+            }
+        }
+    }
+
+    // Helper to pretty-print property names as column headers
+    string FormatHeader(string name)
+    {
+        // Simple PascalCase splitter: JobName -> Job Name, LastRunAt -> Last Run At
+        var chars = new List<char>();
+        for (int i = 0; i < name.Length; i++)
+        {
+            var c = name[i];
+            if (i > 0 && char.IsUpper(c) && !char.IsWhiteSpace(name[i - 1]))
+            {
+                chars.Add(' ');
+            }
+            chars.Add(c);
+        }
+        return new string(chars.ToArray());
+    }
+}
+
+<style>
+    /* Modal JSON body */
+    #jobDetailsModalBody {
+        max-height: 60vh;
+        overflow: auto;
+        background-color: rgba(15, 23, 42, 0.96);
+        color: #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+    }
+
+    html[data-theme="light"] #jobDetailsModalBody {
+        background-color: #0b1120;
+    }
+</style>
+
+<div class="app-card">
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">Job Run Logs (job_run_log)</h1>
+            <p class="text-muted small mb-0">
+                Lightweight operational telemetry for your Python + ETL jobs, used to track status, timing, and errors.
+            </p>
+        </div>
+        <span class="badge rounded-pill app-badge-muted">
+            Operational &middot; ETL Monitoring
+        </span>
+    </div>
+
+    <div class="app-card-body">
+
+        <!-- KPI Row -->
+        <div class="app-kpi-row mb-3">
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Total Log Rows</div>
+                <div class="app-kpi-value">@totalRows</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Distinct Jobs</div>
+                <div class="app-kpi-value">@distinctJobs</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Time Window</div>
+                <div class="app-kpi-value">
+                    @if (earliest.HasValue && latest.HasValue)
+                    {
+                        @($"{earliest.Value:yyyy-MM-dd HH:mm} → {latest.Value:yyyy-MM-dd HH:mm}")
+                    }
+                    else
+                    {
+                        @("N/A")
+                    }
+                </div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Columns</div>
+                <div class="app-kpi-value">@scalarProps.Count</div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Left: Log table -->
+            <div class="col-12 col-lg-7">
+                <div class="app-card-inner">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="h6 text-uppercase text-muted mb-0">Recent Job Activity</h2>
+                        <span class="small text-muted">
+                            Showing @totalRows row(s)
+                        </span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 420px; overflow:auto;">
+                        <table class="table table-sm align-middle mb-0 app-table">
+                            <thead>
+                                <tr>
+                                    @foreach (var prop in scalarProps)
+                                    {
+                                        var headerText =
+                                        prop == lastStatusProp ? "Last Status" :
+                                        prop == detailsProp ? "Details" :
+                                        FormatHeader(prop.Name);
+
+                                        <th scope="col">
+                                            @headerText
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model == null || !Model.Any())
+                                {
+                                    <tr>
+                                        <td colspan="@scalarProps.Count" class="text-center text-muted small">
+                                            No job run logs found. Once your ETL scripts start writing to
+                                            <code>job_run_log</code>, this page will display their status and history.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    var rowIndex = 0;
+                                    foreach (var row in Model)
+                                    {
+                                        // Resolve job name for modal title
+                                        var jobNameVal = jobNameProp != null
+                                        ? (jobNameProp.GetValue(row) as string ?? "(unknown job)")
+                                        : "(unknown job)";
+
+                                        <tr>
+                                            @foreach (var prop in scalarProps)
+                                            {
+                                                var raw = prop.GetValue(row);
+
+                                                if (prop == lastStatusProp)
+                                                {
+                                                    var status = (raw as string) ?? string.Empty;
+                                                    var normalized = status.Trim().ToLowerInvariant();
+
+                                                    var statusClass =
+                                                    string.IsNullOrWhiteSpace(status)
+                                                    ? "job-status-failed"
+                                                    : normalized == "success"
+                                                    ? "job-status-success"
+                                                    : normalized.Contains("partial")
+                                                    ? "job-status-partial"
+                                                    : "job-status-failed";
+
+                                                    <td class="small text-nowrap">
+                                                        <span class="job-status-pill @statusClass">
+                                                            @(string.IsNullOrWhiteSpace(status) ? "unknown" : status)
+                                                        </span>
+                                                    </td>
+                                                }
+                                                else if (prop == detailsProp)
+                                                {
+                                                    var detailsStr = raw as string;
+                                                    if (string.IsNullOrWhiteSpace(detailsStr))
+                                                    {
+                                                        <td class="small text-nowrap">
+                                                            <span class="text-muted small">No details</span>
+                                                        </td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td class="small" style="min-width: 130px;">
+                                                            <button type="button"
+                                                                    class="btn btn-sm btn-outline-secondary job-details-btn"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#jobDetailsModal"
+                                                                    data-details="@detailsStr"
+                                                                    data-job-name="@jobNameVal">
+                                                                Show details
+                                                            </button>
+                                                        </td>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    object? display = raw;
+
+                                                    // Basic formatting for DateTime & nullable DateTime
+                                                    if (raw is DateTime dt)
+                                                    {
+                                                        display = dt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss");
+                                                    }
+                                                    else
+                                                    {
+                                                        var nullableDt = raw as DateTime?;
+                                                        if (nullableDt.HasValue)
+                                                        {
+                                                            display = nullableDt.Value
+                                                            .ToUniversalTime()
+                                                            .ToString("yyyy-MM-dd HH:mm:ss");
+                                                        }
+                                                    }
+
+                                                    <td class="small text-nowrap">
+                                                        @(display ?? "—")
+                                                    </td>
+                                                }
+                                            }
+                                        </tr>
+
+                                        rowIndex++;
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Explanation / usage -->
+            <div class="col-12 col-lg-5">
+                <div class="app-card-inner">
+                    <h2 class="h6 text-uppercase text-muted mb-2">Design &amp; Purpose</h2>
+                    <p class="small mb-2">
+                        <code>job_run_log</code> is your central place to track what the ETL has been doing:
+                        when jobs ran, how they finished, and any status or row counts associated with each run.
+                    </p>
+                    <p class="small mb-2">
+                        <strong>Last Status</strong> is color-coded so you can scan for problems quickly:
+                    </p>
+                    <ul class="small mb-2">
+                        <li><span class="job-status-pill job-status-success">SUCCESS</span> – Job completed successfully.</li>
+                        <li><span class="job-status-pill job-status-partial">PARTIAL</span> – Partial success / warnings.</li>
+                        <li><span class="job-status-pill job-status-failed">FAILED / OTHER</span> – Any other state or empty.</li>
+                    </ul>
+
+                    <p class="small mb-2">
+                        <strong>Details</strong> stores JSON payloads emitted by the pipeline (row counts,
+                        checkpoints, error stacks, etc.). The UI renders these in a Bootstrap modal via a
+                        “Show details” button and pretty-prints the JSON on the client.
+                    </p>
+
+                    <h3 class="fw-semibold fs-6 mt-3 mb-1">Example Uses</h3>
+<pre class="small text-monospace mb-2" style="white-space: pre; overflow:auto;">
+-- See last known status per job
+SELECT job_name, last_run_status, last_run_finished_at
+FROM job_run_log
+ORDER BY job_name;
+</pre>
+
+                    <p class="small mb-0">
+                        Over time, this page becomes your “Ops cockpit” for the crypto warehouse:
+                        you’ll use it to spot failing jobs, stale data, and noisy partial successes
+                        without leaving the web app.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Job Details JSON -->
+<div class="modal fade" id="jobDetailsModal" tabindex="-1" aria-labelledby="jobDetailsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="jobDetailsModalTitle">Run details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="jobDetailsModalBody" class="small text-monospace mb-0" style="white-space: pre;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalTitle = document.getElementById('jobDetailsModalTitle');
+        var modalBodyPre = document.getElementById('jobDetailsModalBody');
+
+        document.querySelectorAll('.job-details-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var raw = this.getAttribute('data-details') || '';
+                var jobName = this.getAttribute('data-job-name') || '(unknown job)';
+                var pretty = raw;
+
+                try {
+                    if (raw) {
+                        var parsed = JSON.parse(raw);
+                        pretty = JSON.stringify(parsed, null, 2);
+                    }
+                } catch (e) {
+                    // If parse fails, just show raw text
+                    pretty = raw;
+                }
+
+                if (modalTitle) {
+                    modalTitle.textContent = 'Run details — ' + jobName;
+                }
+                if (modalBodyPre) {
+                    modalBodyPre.textContent = pretty || '(no details)';
+                }
+            });
+        });
+    });
+</script>

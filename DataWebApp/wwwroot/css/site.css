@@ -701,3 +701,110 @@ html[data-theme="dark"] .last-active-badge-historical {
     background-color: #facc15;
     color: #111827;
 }
+
+/* =========================================================
+   Modal Theming (Job Details + any other modals)
+   ========================================================= */
+
+/* Base modal content uses theme tokens */
+.modal-content {
+    background-color: var(--app-bg-elevated);
+    color: var(--app-text);
+    border-radius: 1rem;
+    border: 1px solid var(--app-border-subtle);
+    box-shadow: var(--app-shadow-card);
+    transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+/* Header + footer borders respect theme */
+.modal-header,
+.modal-footer {
+    border-color: var(--app-border-subtle);
+    background-color: transparent; /* let content background show through */
+}
+
+/* Title always readable */
+.modal-title {
+    color: var(--app-text);
+    font-weight: 600;
+}
+
+/* Close button: dark mode needs a light icon */
+html[data-theme="dark"] .modal-header .btn-close {
+    filter: invert(1) grayscale(1);
+}
+
+/* Light mode: keep close button normal */
+html[data-theme="light"] .modal-header .btn-close {
+    filter: none;
+}
+
+/* Backdrop uses same dark overlay vibe as rest of app */
+.modal-backdrop.show {
+    background-color: rgba(15, 23, 42, 0.85);
+}
+
+/* JSON body area (keeps what we already did, just reiterating structure) */
+#jobDetailsModalBody {
+    max-height: 60vh;
+    overflow: auto;
+    background-color: rgba(15, 23, 42, 0.96);
+    color: #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+html[data-theme="light"] #jobDetailsModalBody {
+    background-color: #0b1120;
+}
+
+/* Status pill styles */
+.job-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* ----- SUCCESS ----- */
+/* Light-mode defaults: darker text for contrast */
+.job-status-success {
+    background-color: rgba(22, 163, 74, 0.15); /* light green */
+    color: #166534; /* dark green text */
+    border: 1px solid rgba(22, 163, 74, 0.6);
+}
+
+/* Dark-mode override: lighter text on dark bg */
+html[data-theme="dark"] .job-status-success {
+    background-color: rgba(22, 163, 74, 0.25);
+    color: #bbf7d0; /* pale green */
+}
+
+/* ----- PARTIAL ----- */
+.job-status-partial {
+    background-color: rgba(245, 158, 11, 0.15); /* light amber */
+    color: #92400e; /* dark amber text */
+    border: 1px solid rgba(245, 158, 11, 0.7);
+}
+
+html[data-theme="dark"] .job-status-partial {
+    background-color: rgba(245, 158, 11, 0.25);
+    color: #fef3c7; /* pale yellow */
+}
+
+/* ----- FAILED / OTHER ----- */
+.job-status-failed {
+    background-color: rgba(220, 38, 38, 0.15); /* light red */
+    color: #b91c1c; /* dark red text */
+    border: 1px solid rgba(220, 38, 38, 0.7);
+}
+
+html[data-theme="dark"] .job-status-failed {
+    background-color: rgba(220, 38, 38, 0.25);
+    color: #fecaca; /* pale red */
+}

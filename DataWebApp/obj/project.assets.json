@@ -2979,23 +2979,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\TEMP1\\.nuget\\packages\\": {},
+    "C:\\Users\\rober\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\TEMP1\\Documents\\Projects\\Data-Web-Visualization\\DataWebApp\\DataWebApp.csproj",
+      "projectUniqueName": "C:\\Users\\rober\\OneDrive\\Documents\\Project\\DataProjects\\Data-Web-Visualization\\DataWebApp\\DataWebApp.csproj",
       "projectName": "DataWebApp",
-      "projectPath": "C:\\Users\\TEMP1\\Documents\\Projects\\Data-Web-Visualization\\DataWebApp\\DataWebApp.csproj",
-      "packagesPath": "C:\\Users\\TEMP1\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\TEMP1\\Documents\\Projects\\Data-Web-Visualization\\DataWebApp\\obj\\",
+      "projectPath": "C:\\Users\\rober\\OneDrive\\Documents\\Project\\DataProjects\\Data-Web-Visualization\\DataWebApp\\DataWebApp.csproj",
+      "packagesPath": "C:\\Users\\rober\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\rober\\OneDrive\\Documents\\Project\\DataProjects\\Data-Web-Visualization\\DataWebApp\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\TEMP1\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\rober\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],

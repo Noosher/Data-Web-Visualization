@@ -1,0 +1,182 @@
+﻿@model List<DataWebApp.data.CryptoAssetGroupHistory>
+
+@{
+    ViewData["Title"] = "Group History Events";
+
+    var totalEvents = Model?.Count ?? 0;
+
+    var distinctAssets = Model?
+        .Where(h => h.Asset != null && !string.IsNullOrWhiteSpace(h.Asset.Symbol))
+        .Select(h => h.Asset.Symbol)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .Count() ?? 0;
+
+    var distinctGroups = Model?
+        .Where(h => h.Group != null && !string.IsNullOrWhiteSpace(h.Group.Tag))
+        .Select(h => h.Group.Tag)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .Count() ?? 0;
+
+    DateTime? earliest = (Model != null && Model.Any())
+        ? Model.Min(h => h.EventTimestamp)
+        : (DateTime?)null;
+
+    DateTime? latest = (Model != null && Model.Any())
+        ? Model.Max(h => h.EventTimestamp)
+        : (DateTime?)null;
+}
+
+<div class="app-card">
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">Group History Events (crypto_asset_group_history)</h1>
+            <p class="text-muted small mb-0">
+                Log of asset ↔ group membership changes over time, used to understand when and how segments evolved.
+            </p>
+        </div>
+        <span class="badge rounded-pill app-badge-muted">
+            Audit &middot; Membership Timeline
+        </span>
+    </div>
+
+    <div class="app-card-body">
+
+        <!-- KPI Row -->
+        <div class="app-kpi-row mb-3">
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Total Events</div>
+                <div class="app-kpi-value">@totalEvents</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Assets Touched</div>
+                <div class="app-kpi-value">@distinctAssets</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Groups Touched</div>
+                <div class="app-kpi-value">@distinctGroups</div>
+            </div>
+            <div class="app-kpi-chip">
+                <div class="app-kpi-label">Event Window</div>
+                <div class="app-kpi-value">
+                    @if (earliest.HasValue && latest.HasValue)
+                    {
+                        @($"{earliest.Value:yyyy-MM-dd HH:mm} → {latest.Value:yyyy-MM-dd HH:mm}")
+                    }
+                    else
+                    {
+                        @("N/A")
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Left: History table -->
+            <div class="col-12 col-lg-7">
+                <div class="app-card-inner">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="h6 text-uppercase text-muted mb-0">Recent Membership Events</h2>
+                        <span class="small text-muted">
+                            Showing @totalEvents events (capped at 500 in controller)
+                        </span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 420px; overflow:auto;">
+                        <table class="table table-sm align-middle mb-0 app-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Event Time (UTC)</th>
+                                    <th scope="col">Asset</th>
+                                    <th scope="col">Group Tag</th>
+                                    <th scope="col">Group Type</th>
+                                    <th scope="col">Event Id</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model == null || !Model.Any())
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted small">
+                                            No group history events found. Once <code>GroupSelector.py</code>
+                                            begins logging changes, this table will show a timeline of membership updates.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    foreach (var h in Model
+                                    .OrderByDescending(x => x.EventTimestamp)
+                                    .ThenBy(x => x.Asset.Symbol))
+                                    {
+                                        var symbol = h.Asset?.Symbol ?? "(unknown)";
+                                        var name = h.Asset?.Name ?? "(unknown)";
+                                        var tag = h.Group?.Tag ?? "(unknown)";
+                                        var type = h.Group?.Type ?? "(unknown)";
+
+                                        <tr>
+                                            <td class="small text-nowrap">
+                                                @h.EventTimestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                            </td>
+                                            <td class="small">
+                                                <div class="fw-semibold text-monospace">@symbol</div>
+                                                <div class="text-muted small">@name</div>
+                                            </td>
+                                            <td>
+                                                <span class="badge rounded-pill app-badge-muted">@tag</span>
+                                            </td>
+                                            <td class="small text-uppercase">
+                                                @type
+                                            </td>
+                                            <td class="small text-monospace">
+                                                @h.Id
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Explanation / usage -->
+            <div class="col-12 col-lg-5">
+                <div class="app-card-inner">
+                    <h2 class="h6 text-uppercase text-muted mb-2">Design &amp; Purpose</h2>
+                    <p class="small mb-2">
+                        <code>crypto_asset_group_history</code> is the append-only audit log for
+                        <code>crypto_asset_group</code>. Where the bridge table shows the current
+                        snapshot of memberships, this table answers <em>“how did we get here?”</em>.
+                    </p>
+                    <ul class="small mb-2">
+                        <li>Each row is tied to a single asset and a single group via foreign keys.</li>
+                        <li><code>event_timestamp</code> records when the change was recorded by the ETL.</li>
+                        <li>Enables historical reconstructions of what any segment looked like on a past date.</li>
+                    </ul>
+
+                    <h3 class="fw-semibold fs-6 mt-3 mb-1">Example Analysis</h3>
+                    <p class="small mb-2">
+                        Typical patterns include tracing when an asset entered or left a given segment:
+                    </p>
+<pre class="small text-monospace mb-2" style="white-space: pre; overflow:auto;">
+SELECT a.symbol,
+       g.tag        AS group_tag,
+       h.event_timestamp
+FROM crypto_asset_group_history h
+JOIN crypto_asset a ON a.id = h.asset_id
+JOIN crypto_group g ON g.id = h.group_id
+WHERE g.tag = 'TOP15'
+  AND a.symbol = 'BTC'
+ORDER BY h.event_timestamp;
+</pre>
+
+                    <p class="small mb-0">
+                        Combined with price fact tables, this history view lets you ask questions like
+                        “What happened to returns after an asset joined or left a specific group?” and
+                        “How stable are our curated segments over time?”.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
