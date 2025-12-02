@@ -116,6 +116,67 @@
                             </ul>
                         </li>
 
+                        <!-- ANALYSIS DROPDOWN -->
+                        <li class="nav-item dropdown app-nav-dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="analysisDropdown"
+                               role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span>Analysis</span>
+                            </a>
+                            <ul class="dropdown-menu app-dropdown-menu" aria-labelledby="analysisDropdown">
+                                <!-- Daily Analysis Section -->
+                                <li class="dropdown-header px-3 small app-dropdown-header-main">
+                                    <span class="app-dropdown-icon">📈</span> Daily Analysis
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Analysis" asp-action="DailyOverview">
+                                        Overview
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Analysis" asp-action="DailyAspNetAnalysis">
+                                        ASP.NET Analysis
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Analysis" asp-action="DailyPowerBIAnalysis">
+                                        PowerBI Analysis
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Analysis" asp-action="DailyMatPlotLibAnalysis">
+                                        MatPlotLib Analysis
+                                    </a>
+                                </li>
+
+                                <li><hr class="dropdown-divider" /></li>
+
+                                <!-- Hourly Analysis Section -->
+                                <li class="dropdown-header px-3 small app-dropdown-header-main">
+                                    <span class="app-dropdown-icon">⏱️</span> Hourly Analysis
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Analysis" asp-action="HourlyOverview">
+                                        Overview
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Analysis" asp-action="HourlyAspNetAnalysis">
+                                        ASP.NET Analysis
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Analysis" asp-action="HourlyPowerBIAnalysis">
+                                        PowerBI Analysis
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Analysis" asp-action="HourlyMatPlotLibAnalysis">
+                                        MatPlotLib Analysis
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">
                                 <span>Privacy</span>

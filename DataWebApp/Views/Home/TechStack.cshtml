@@ -1,0 +1,233 @@
+@{
+    ViewData["Title"] = "Tech Stack";
+}
+
+<div class="app-card">
+    <!-- Header -->
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-0">Tech Stack</h1>
+            <p class="text-muted small mb-0">
+                End-to-end crypto market intelligence platform – from API to dashboard
+            </p>
+        </div>
+        <span class="badge rounded-pill app-badge-muted">
+            Data Engineering · Web · Analytics
+        </span>
+    </div>
+
+    <div class="app-card-body">
+        <!-- Architecture Overview -->
+        <div class="app-card-inner mb-4">
+            <h2 class="h6 text-uppercase text-muted mb-2">Architecture Overview</h2>
+            <p class="mb-3">
+                The platform is built as a <strong>modern analytics stack</strong> with clean separation between
+                ingestion (Python), storage (Neon Postgres), and presentation (ASP.NET Core MVC, Power BI, notebooks).
+            </p>
+
+            <div class="border rounded-3 p-3 mb-2 app-card-inner" style="background: transparent;">
+                <div class="text-center small text-monospace" style="line-height: 1.8;">
+                    <div class="mb-1">
+                        <strong>Data Source</strong><br />
+                        CoinGecko REST API
+                    </div>
+                    <div class="mb-1">↓</div>
+                    <div class="mb-1">
+                        <strong>ETL Layer</strong><br />
+                        Python scripts (GroupSelector, BulkExporter)
+                    </div>
+                    <div class="mb-1">↓</div>
+                    <div class="mb-1">
+                        <strong>Data Warehouse</strong><br />
+                        Neon Serverless Postgres
+                    </div>
+                    <div class="mb-1">↓</div>
+                    <div>
+                        <strong>Presentation Layer</strong><br />
+                        ASP.NET Core MVC · (Planned) Power BI · (Planned) Python notebooks
+                    </div>
+                </div>
+            </div>
+
+            <p class="small text-muted mb-0">
+                Each layer has a clear contract: Python owns ingestion, Postgres owns storage, and the web app owns
+                exploration and monitoring.
+            </p>
+        </div>
+
+        <!-- CURRENT IMPLEMENTATION -->
+        <div class="app-card-inner mb-4">
+            <h2 class="h6 text-uppercase text-muted mb-3">Current Implementation</h2>
+
+            <div class="row g-3">
+                <!-- Python ETL -->
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h3 class="h6 fw-semibold mb-0">Python ETL</h3>
+                            <span class="badge bg-success">Implemented</span>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Production-style ETL scripts that build and refresh the analytics warehouse.
+                        </p>
+                        <ul class="small mb-0">
+                            <li><strong>GroupSelector.py</strong> – builds <code>crypto_group</code> and <code>crypto_asset_group</code>, tracks membership history.</li>
+                            <li><strong>BulkExporter.py</strong> – pulls daily & hourly prices from CoinGecko into fact tables.</li>
+                            <li>Watermark-based freshness using <code>last_daily_observed_at</code> / <code>last_hourly_observed_at</code>.</li>
+                            <li>Idempotent upserts with Postgres <code>ON CONFLICT</code>.</li>
+                            <li>Writes structured diagnostics to <code>job_run_log.details</code> as JSON.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Neon Postgres -->
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h3 class="h6 fw-semibold mb-0">Neon Postgres</h3>
+                            <span class="badge bg-info text-dark">Implemented</span>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Serverless Postgres used as a lightweight data warehouse for crypto analytics.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>
+                                Star-style schema:
+                                <span class="text-muted">
+                                    <code>crypto_asset</code>, <code>crypto_group</code>, <code>crypto_asset_group</code>,
+                                    <code>crypto_asset_price_daily</code>, <code>crypto_asset_price_hourly</code>.
+                                </span>
+                            </li>
+                            <li><code>crypto_asset_group_history</code> and <code>job_run_log</code> for audit & ETL monitoring.</li>
+                            <li>Composite indexes on asset/time for fast price lookups.</li>
+                            <li>Connection managed via user secrets in ASP.NET, safe for public GitHub.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- ASP.NET Core MVC -->
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h3 class="h6 fw-semibold mb-0">ASP.NET Core MVC</h3>
+                            <span class="badge bg-primary">Implemented</span>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Strongly-typed web app for exploring the warehouse and monitoring ETL health.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>Entity Framework Core with <code>AppDbContext</code> mapped to Neon schema.</li>
+                            <li>
+                                Custom ViewModels for:
+                                <span class="text-muted">
+                                    group catalogs, asset ↔ group memberships, job run logs, and price snapshots.
+                                </span>
+                            </li>
+                            <li>7+ data views: assets, groups, bridges, daily/hourly prices, history, and job logs.</li>
+                            <li>JobRunLogs page with color-coded status pills and JSON details in a themed modal.</li>
+                            <li>Group membership view shows Σ-overlap badges and derived KPIs (e.g., assets in 2, 3+ groups).</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- CoinGecko API -->
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h3 class="h6 fw-semibold mb-0">CoinGecko API</h3>
+                            <span class="badge bg-warning text-dark">Implemented</span>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            Primary market data source for prices, market caps, volume, and asset metadata.
+                        </p>
+                        <ul class="small mb-0">
+                            <li>Universe selection via <code>/coins/markets</code> with category filters (meme, L1, DeFi).</li>
+                            <li>Time-series ingestion via <code>/coins/{id}/market_chart</code> for 365-day daily and 90-day hourly data.</li>
+                            <li>Free-tier friendly by limiting asset universe and using watermarks to avoid duplicate pulls.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DESIGN SYSTEM & UX -->
+        <div class="app-card-inner mb-4">
+            <h2 class="h6 text-uppercase text-muted mb-3">Design System & UX</h2>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <h3 class="h6 fw-semibold mb-2">Custom UI Framework</h3>
+                        <ul class="small mb-0">
+                            <li>~800 lines of custom CSS (<code>site.css</code>) on top of Bootstrap 5.</li>
+                            <li>
+                                Reusable components:
+                                <span class="text-muted">
+                                    <code>app-card</code>, <code>app-kpi-chip</code>, <code>app-table</code>, status badges.
+                                </span>
+                            </li>
+                            <li>Multi-level “Database” dropdown with featured overview link.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <h3 class="h6 fw-semibold mb-2">Light / Dark Theme</h3>
+                        <ul class="small mb-0">
+                            <li>CSS custom properties and a navbar theme toggle (stored in <code>localStorage</code>).</li>
+                            <li>Theme-aware cards, tables, and modals to keep contrast high in both modes.</li>
+                            <li>Row hover, badge colors, and code blocks tuned specifically for dark mode readability.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROADMAP / PLANNED -->
+        <div class="app-card-inner">
+            <h2 class="h6 text-uppercase text-muted mb-3">Phase 2 Roadmap (Planned)</h2>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 h-100">
+                        <h3 class="h6 fw-semibold mb-2">Analytics Layer</h3>
+                        <ul class="small mb-0">
+                            <li>Power BI dashboards on top of Neon Postgres.</li>
+                            <li>Group-level and factor-style performance reports.</li>
+                            <li>Optional publish-to-web for portfolio demos.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 h-100">
+                        <h3 class="h6 fw-semibold mb-2">Deployment & CI/CD</h3>
+                        <ul class="small mb-0">
+                            <li>Host ASP.NET app on Azure App Service or equivalent.</li>
+                            <li>GitHub Actions for build/test/deploy and scheduled ETL runs.</li>
+                            <li>Centralized secrets in Azure Key Vault or similar.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 h-100">
+                        <h3 class="h6 fw-semibold mb-2">Monitoring & Alerts</h3>
+                        <ul class="small mb-0">
+                            <li>Application telemetry via Application Insights.</li>
+                            <li>Derived health metrics from <code>job_run_log</code>.</li>
+                            <li>Email / webhook alerts on ETL failures or stale data.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-3 mb-0" role="alert">
+                <small>
+                    <strong>Current status:</strong> The stack is fully wired end-to-end in development
+                    (CoinGecko → Python ETL → Neon Postgres → ASP.NET Core MVC). Cloud deployment and analytics
+                    dashboards are planned as the next phase.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
