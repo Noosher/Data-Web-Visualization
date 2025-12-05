@@ -1,0 +1,155 @@
+@model DataWebApp.Models.AssetKpiCardViewModel
+
+@{
+    var cardId = $"kpi-card-{Model.Symbol.ToLower()}";
+    var gaugeId = $"gauge-{Model.Symbol.ToLower()}";
+    var lineChartId = $"line-{Model.Symbol.ToLower()}";
+    var barChartId = $"bar-{Model.Symbol.ToLower()}";
+
+    // Determine confidence badge class
+    var confidenceBadgeClass = Model.PredictionConfidence >= 70 ? "kpi-confidence-high"
+                              : Model.PredictionConfidence >= 40 ? "kpi-confidence-medium"
+                              : "kpi-confidence-low";
+
+    // Serialize chart data to JSON for JavaScript
+    var lineChartDataJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.ChartData.Select(d => new { date = d.Date.ToString("yyyy-MM-dd"), price = d.Price })
+    );
+
+    var barChartDataJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.BarChartData.Select(d => new { label = d.Label, value = d.Value })
+    );
+}
+
+<div class="kpi-card" id="@cardId"
+     data-symbol="@Model.Symbol"
+     data-line-chart="@lineChartDataJson"
+     data-bar-chart="@barChartDataJson"
+     data-performance-score="@Model.PerformanceScore">
+
+    @if (!Model.HasData)
+    {
+        <!-- No Data State -->
+        <div class="kpi-no-data">
+            <div class="kpi-no-data-icon">⚠️</div>
+            <h3 class="h6">@Model.Symbol - @Model.Name</h3>
+            <p class="kpi-no-data-text">No price data available for this asset.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Card Header -->
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div>
+                    <div class="kpi-symbol">@Model.Symbol</div>
+                    <div class="kpi-name">@Model.Name</div>
+                </div>
+                <div class="text-end">
+                    <div class="kpi-metric-value">$@Model.CurrentPrice.ToString("N2")</div>
+                    <div class="kpi-metric-label">Current Price</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Gauge Section -->
+        <div class="kpi-gauge-section">
+            <div class="kpi-gauge-header">
+                <span class="kpi-gauge-label">Performance Score</span>
+                <span class="kpi-info-icon"
+                      data-tippy-content="@Model.PerformanceScoreExplanation"
+                      title="@Model.PerformanceScoreExplanation">
+                    ℹ️
+                </span>
+            </div>
+            <div class="kpi-gauge-container">
+                <div id="@gaugeId" class="kpi-chart"></div>
+                <div class="kpi-score-overlay">
+                    <div class="kpi-score-value">@Model.PerformanceScore.ToString("N0")</div>
+                    <div class="kpi-score-label">Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="kpi-metrics">
+            <div class="kpi-metric">
+                <div class="kpi-metric-label">Market Cap</div>
+                <div class="kpi-metric-value">$@((Model.MarketCap / 1_000_000).ToString("N1"))M</div>
+            </div>
+            <div class="kpi-metric">
+                <div class="kpi-metric-label">24h Volume</div>
+                <div class="kpi-metric-value">$@((Model.Volume24h / 1_000_000).ToString("N1"))M</div>
+            </div>
+            <div class="kpi-metric">
+                <div class="kpi-metric-label">7d Change</div>
+                <div class="kpi-metric-value @(Model.PriceChange7d >= 0 ? "kpi-change-positive" : "kpi-change-negative")">
+                    @if (Model.PriceChange7d.HasValue)
+                    {
+                        @($"{Model.PriceChange7d.Value:+0.0;-0.0;0}%")
+                    }
+                    else
+                    {
+                        @("N/A")
+                    }
+                </div>
+            </div>
+            <div class="kpi-metric">
+                <div class="kpi-metric-label">30d Change</div>
+                <div class="kpi-metric-value @(Model.PriceChange30d >= 0 ? "kpi-change-positive" : "kpi-change-negative")">
+                    @if (Model.PriceChange30d.HasValue)
+                    {
+                        @($"{Model.PriceChange30d.Value:+0.0;-0.0;0}%")
+                    }
+                    else
+                    {
+                        @("N/A")
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="kpi-charts-section">
+            <!-- Line Chart -->
+            <div class="kpi-chart-container">
+                <div class="kpi-chart-label">Price Trend</div>
+                <div id="@lineChartId" class="kpi-chart"></div>
+            </div>
+
+            <!-- Bar Chart (Collapsible) -->
+            <div class="kpi-chart-container">
+                <div class="kpi-chart-collapsible-header" onclick="toggleBarChart('@barChartId')">
+                    <div class="kpi-chart-label">Weekly Volume</div>
+                    <span class="kpi-chart-collapse-icon" id="@barChartId-icon">▼</span>
+                </div>
+                <div class="kpi-chart-collapsible-content" id="@barChartId-content">
+                    <div id="@barChartId" class="kpi-bar-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prediction Section -->
+        <div class="kpi-prediction">
+            <div class="kpi-prediction-header">
+                <span class="kpi-prediction-label">
+                    @Model.ForecastDays-Day Forecast
+                    <span class="kpi-info-icon"
+                          data-tippy-content="@Model.PredictionExplanation"
+                          title="Click for detailed calculation">
+                        ℹ️
+                    </span>
+                </span>
+                <span class="kpi-confidence-badge @confidenceBadgeClass">
+                    @Model.PredictionConfidence.ToString("N0")% Confidence
+                </span>
+            </div>
+            <div class="kpi-prediction-value">
+                $@Model.PredictedPrice.ToString("N2")
+            </div>
+            <div class="kpi-prediction-details">
+                Linear regression on @Model.ChartData.Count days of data. Click ℹ️ for formula & calculation details.
+            </div>
+        </div>
+    }
+</div>

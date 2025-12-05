@@ -1,0 +1,218 @@
+@model DataWebApp.Models.DailyAnalysisViewModel
+
+@{
+    ViewData["Title"] = "Daily Analysis - ASP.NET";
+}
+
+<!-- Sidebar Toggle Tab (Always Visible) -->
+<div class="kpi-sidebar-toggle-tab" id="sidebarToggleTab">
+    <span class="kpi-sidebar-toggle-icon">⚙️</span>
+    <span class="kpi-sidebar-toggle-text">Filters</span>
+</div>
+
+<!-- Collapsible Sidebar -->
+<div class="kpi-sidebar" id="kpiSidebar">
+    <div class="kpi-sidebar-header">
+        <h2 class="kpi-sidebar-title">Analysis Settings</h2>
+        <button class="kpi-sidebar-close" id="sidebarCloseBtn">✕</button>
+    </div>
+
+    <div class="kpi-sidebar-content">
+        <form method="get" asp-action="DailyAspNetAnalysis" id="analysisFiltersForm">
+            <!-- Time Range Section -->
+            <div class="kpi-filter-section">
+                <label class="kpi-filter-section-label">Time Range</label>
+                <div class="kpi-filter-options">
+                    <select name="days" id="daysFilter" class="kpi-filter-select-full">
+                        <option value="30" selected="@(Model.DefaultDaysToShow == 30)">Last 30 Days</option>
+                        <option value="60" selected="@(Model.DefaultDaysToShow == 60)">Last 60 Days</option>
+                        <option value="90" selected="@(Model.DefaultDaysToShow == 90)">Last 90 Days</option>
+                        <option value="180" selected="@(Model.DefaultDaysToShow == 180)">Last 180 Days</option>
+                        <option value="365" selected="@(Model.DefaultDaysToShow == 365)">Last Year</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Custom Date Range Section -->
+            <div class="kpi-filter-section">
+                <label class="kpi-filter-section-label">Custom Date Range</label>
+                <div class="kpi-filter-options">
+                    <label class="kpi-filter-label-small">Start Date</label>
+                    <input type="date" name="startDate" id="startDate" class="kpi-filter-input-full"
+                           value="@Model.CustomStartDate?.ToString("yyyy-MM-dd")" />
+
+                    <label class="kpi-filter-label-small mt-2">End Date</label>
+                    <input type="date" name="endDate" id="endDate" class="kpi-filter-input-full"
+                           value="@Model.CustomEndDate?.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+
+            <!-- Group Filter Section -->
+            <div class="kpi-filter-section">
+                <label class="kpi-filter-section-label">Filter by Group</label>
+                <div class="kpi-filter-options">
+                    @if (Model.AvailableGroups != null && Model.AvailableGroups.Any())
+                    {
+                        foreach (var group in Model.AvailableGroups)
+                        {
+                            <label class="kpi-group-checkbox-label">
+                                <input type="checkbox" name="groups" value="@group.Tag"
+                                       class="kpi-group-checkbox"
+                                       checked="@group.IsSelected" />
+                                <span class="kpi-group-checkbox-text">@group.DisplayName</span>
+                            </label>
+                        }
+                    }
+                    else
+                    {
+                        <p class="small text-muted">No groups available</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Layout Options Section -->
+            <div class="kpi-filter-section">
+                <label class="kpi-filter-section-label">Grid Layout</label>
+                <div class="kpi-layout-options">
+                    <button type="button" class="kpi-layout-option" data-cols="2">
+                        <div class="kpi-layout-icon">▦</div>
+                        <div class="kpi-layout-label">2 Columns</div>
+                    </button>
+                    <button type="button" class="kpi-layout-option active" data-cols="3">
+                        <div class="kpi-layout-icon">▦▦</div>
+                        <div class="kpi-layout-label">3 Columns</div>
+                    </button>
+                    <button type="button" class="kpi-layout-option" data-cols="4">
+                        <div class="kpi-layout-icon">▦▦▦</div>
+                        <div class="kpi-layout-label">4 Columns</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Apply Button -->
+            <button type="submit" class="kpi-apply-btn-full">Apply Filters</button>
+        </form>
+
+        <!-- Info Section -->
+        <div class="kpi-sidebar-info">
+            <div class="kpi-info-badge">
+                <span class="kpi-info-icon">📊</span>
+                <div>
+                    <div class="kpi-info-label">Active Assets</div>
+                    <div class="kpi-info-value">@Model.TotalActiveAssets</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Area -->
+<div class="kpi-main-content" id="kpiMainContent">
+    <!-- Page Header with Sorting -->
+    <div class="kpi-page-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h1 class="kpi-page-title">Daily Crypto Analysis</h1>
+                <p class="kpi-page-subtitle mb-0">
+                    Interactive KPI cards with performance metrics, trends, and predictions
+                </p>
+            </div>
+            <div class="kpi-sort-controls">
+                <form method="get" asp-action="DailyAspNetAnalysis" id="sortForm" class="d-flex align-items-center gap-2">
+                    <!-- Preserve filter params -->
+                    <input type="hidden" name="days" value="@Model.DefaultDaysToShow" />
+                    @if (Model.CustomStartDate.HasValue)
+                    {
+                        <input type="hidden" name="startDate" value="@Model.CustomStartDate.Value.ToString("yyyy-MM-dd")" />
+                    }
+                    @if (Model.CustomEndDate.HasValue)
+                    {
+                        <input type="hidden" name="endDate" value="@Model.CustomEndDate.Value.ToString("yyyy-MM-dd")" />
+                    }
+                    @foreach (var group in Model.SelectedGroups)
+                    {
+                        <input type="hidden" name="groups" value="@group" />
+                    }
+
+                    <label class="kpi-sort-label">Sort by:</label>
+                    <select name="sortBy" class="kpi-sort-select" onchange="document.getElementById('sortForm').submit()">
+                        <option value="Symbol" selected="@(Model.SortBy == "Symbol")">Symbol</option>
+                        <option value="Price" selected="@(Model.SortBy == "Price")">Current Price</option>
+                        <option value="MarketCap" selected="@(Model.SortBy == "MarketCap")">Market Cap</option>
+                        <option value="Score" selected="@(Model.SortBy == "Score")">Performance Score</option>
+                    </select>
+
+                    <input type="hidden" name="sortOrder" id="sortOrderInput" value="@Model.SortOrder" />
+                    <button type="button" class="kpi-sort-order-btn" id="sortOrderBtn" onclick="toggleSortOrder()">
+                        @if (Model.SortOrder == "Asc")
+                        {
+                            <span>↑</span>
+                        }
+                        else
+                        {
+                            <span>↓</span>
+                        }
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards Grid -->
+    <div class="kpi-cards-grid" data-cols="3" id="kpiCardsGrid">
+    @if (Model.AssetKpis != null && Model.AssetKpis.Any())
+    {
+        foreach (var kpi in Model.AssetKpis)
+        {
+            @await Html.PartialAsync("_AssetKpiCard", kpi)
+        }
+    }
+    else
+    {
+        <div class="app-card">
+            <div class="app-card-body">
+                <div class="kpi-no-data">
+                    <div class="kpi-no-data-icon">📊</div>
+                    <p class="kpi-no-data-text">
+                        No active crypto assets found. Please run the ETL pipeline to populate data.
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+    </div>
+</div>
+
+@section Scripts {
+    <!-- ApexCharts Library -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
+
+    <!-- Popper.js for tooltips -->
+    <script src="https://cdn.jsdelivr.net/npm/@@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy-bundle.umd.min.js"></script>
+
+    <!-- Custom Analysis Script -->
+    <script src="~/js/analysis-daily.js" asp-append-version="true"></script>
+
+    <!-- Sidebar Toggle Script -->
+    <script src="~/js/sidebar-toggle.js" asp-append-version="true"></script>
+
+    <!-- Sort Order Toggle Script -->
+    <script>
+        function toggleSortOrder() {
+            const input = document.getElementById('sortOrderInput');
+            const btn = document.getElementById('sortOrderBtn');
+            const form = document.getElementById('sortForm');
+
+            if (input.value === 'Asc') {
+                input.value = 'Desc';
+                btn.innerHTML = '<span>↓</span>';
+            } else {
+                input.value = 'Asc';
+                btn.innerHTML = '<span>↑</span>';
+            }
+
+            form.submit();
+        }
+    </script>
+}

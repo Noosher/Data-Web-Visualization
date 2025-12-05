@@ -37,7 +37,7 @@ body {
     --app-bg: #f3f4f6;
     --app-bg-elevated: #ffffff;
     --app-bg-subtle: #e5e7eb;
-    /* TEXT – MASTER COLORS */
+    /* TEXT ï¿½ MASTER COLORS */
     --app-text: #111827; /* main text on light */
     --app-text-muted: #6b7280; /* muted text on light */
 
@@ -55,7 +55,7 @@ html[data-theme="dark"] {
     --app-bg: radial-gradient(circle at top, #020617 0, #020617 40%, #020617 100%);
     --app-bg-elevated: rgba(15, 23, 42, 0.98);
     --app-bg-subtle: rgba(15, 23, 42, 0.85);
-    /* TEXT – MASTER COLORS */
+    /* TEXT ï¿½ MASTER COLORS */
     --app-text: #f9fafb; /* main text on dark */
     --app-text-muted: #cbd5e1; /* muted but still high contrast */
 
@@ -138,9 +138,10 @@ code {
 }
 
 .app-main-container {
-    max-width: 1120px;
+    max-width: 1800px;
     padding-top: 1.5rem;
     padding-bottom: 2rem;
+    width: 100%;
 }
 
 .app-main {

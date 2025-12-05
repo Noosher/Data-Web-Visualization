@@ -1,5 +1,7 @@
 wwwroot\css\site.css
 wwwroot\favicon.ico
+wwwroot\js\analysis-daily.js
+wwwroot\js\sidebar-toggle.js
 wwwroot\js\site.js
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map
@@ -62,8 +64,12 @@ wwwroot\lib\jquery\dist\jquery.slim.min.js
 wwwroot\lib\jquery\dist\jquery.slim.min.map
 wwwroot\lib\jquery\LICENSE.txt
 wwwroot\Media\DB Diagram_page_002.jpg
+wwwroot\css\kpi.css
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\css\site.css
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\favicon.ico
+C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\js\analysis-daily.js
+C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\js\sidebar-toggle.js
+C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\js\site.js
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css
@@ -123,4 +129,4 @@ C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\Da
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\lib\jquery\dist\jquery.slim.min.js
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\lib\jquery\dist\jquery.slim.min.map
 C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\lib\jquery\LICENSE.txt
-C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\js\site.js
+C:\Users\rober\OneDrive\Documents\Project\DataProjects\Data-Web-Visualization\DataWebApp\wwwroot\css\kpi.css

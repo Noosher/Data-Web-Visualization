@@ -1,0 +1,16 @@
+@{
+    ViewData["Title"] = ViewData["Message"]?.ToString() ?? "Coming Soon";
+}
+
+<div class="app-card">
+    <div class="app-card-header">
+        <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+    </div>
+    <div class="app-card-body">
+        <div class="text-center py-5">
+            <h2 class="display-6 text-muted">🚧 Under Construction</h2>
+            <p class="lead">This feature is coming soon!</p>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-3">Return to Dashboard</a>
+        </div>
+    </div>
+</div>
